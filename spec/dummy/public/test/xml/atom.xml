@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>id</id>
+  <title>title</title>
+  <updated>2017-01-01T00:00:00+00:00</updated>
+  <entry>
+    <id>entry id</id>
+    <title>entry title</title>
+    <updated>2017-01-01T00:00:00+00:00</updated>
+    <summary>entry summary</summary>
+    <link href="/test/index.html" />
+  </entry>
+</feed>

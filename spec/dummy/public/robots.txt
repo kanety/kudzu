@@ -1,0 +1,14 @@
+# robots.txt for test
+User-agent: *   # all bots
+Allow: /robots/allow
+Disallow: /robots/disallow
+Crawl-delay: 1
+
+User-agent: Testbot1   # Testbot1 and Testbot2
+User-agent: Testbot2
+Allow: /allow
+Disallow: /disallow
+Crawl-delay: 2
+
+Sitemap: http://localhost/sitemap1.xml
+Sitemap: http://localhost/sitemap2.xml

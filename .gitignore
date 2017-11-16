@@ -1,0 +1,9 @@
+.bundle/
+.project
+Gemfile.lock
+pkg/
+coverage/
+spec/dummy/log/*.log
+spec/dummy/tmp/
+spec/dummy/.sass-cache
+tmp/
