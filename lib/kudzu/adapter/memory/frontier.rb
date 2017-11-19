@@ -1,6 +1,6 @@
 module Kudzu
   module Adapter
-    class Memory
+    module Memory
       class Frontier
         def initialize(uuid, config = {})
           @uuid = uuid

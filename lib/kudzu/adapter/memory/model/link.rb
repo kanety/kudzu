@@ -1,6 +1,6 @@
 module Kudzu
   module Adapter
-    class Memory
+    module Memory
       class Link
         include Kudzu::Adapter::Base::Link
 
