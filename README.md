@@ -15,12 +15,13 @@ A simple web crawler for ruby.
 ## Dependencies
 
 * ruby 2.3+
+* libicu
 
 ## Page store
 
 This gem supports only in-memory crawling by default. Use following adapter to store pages persistently:
 
-* [kudzu_active_record](https://github.com/kanety/kudzu_active_record)
+* [kudzu-adapter-active_record](https://github.com/kanety/kudzu-adapter-active_record)
 
 ## Installation
 
