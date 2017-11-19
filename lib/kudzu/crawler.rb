@@ -21,12 +21,7 @@ module Kudzu
       @config = dsl.config
     end
 
-    def prepare(seed_url)
-      if @config[:log_file]
-        @logger = Logger.new(@config[:log_file])
-        @logger.level = @config[:log_level]
-      end
-
+    def prepare
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
       @repository = Kudzu.adapter::Repository.new(@config)
 
@@ -40,10 +35,15 @@ module Kudzu
 
       @revisit_scheduler = Revisit::Scheduler.new(@config)
       @content_type_parser = Util::ContentTypeParser.new
+
+      if @config[:log_file]
+        @logger = Logger.new(@config[:log_file])
+        @logger.level = @config[:log_level]
+      end
     end
 
     def run(seed_url, &block)
-      prepare(seed_url)
+      prepare
 
       @frontier.enqueue(seed_url, depth: 1)
 
@@ -147,23 +147,23 @@ module Kudzu
       end
 
       if allowed_page?(page)
-        save_page(page)
+        @repository.register(page)
       else
-        delete_page(page)
+        @repository.delete(page)
       end
     end
 
     def handle_not_modified(page, link, response)
       @revisit_scheduler.schedule(page, modified: false)
-      save_page(page)
+      @repository.register(page)
     end
 
     def handle_not_found(page, link, response)
-      delete_page(page)
+      @repository.delete(page)
     end
 
     def handle_gone(page, link, response)
-      delete_page(page)
+      @repository.delete(page)
     end
 
     def detect_charset(page)
@@ -208,14 +208,6 @@ module Kudzu
         log :info, "page dropped: #{page.url}"
         false
       end
-    end
-
-    def save_page(page)
-      @repository.register(page)
-    end
-
-    def delete_page(page)
-      @repository.delete(page)
     end
 
     def log(level, message, ex = nil)
