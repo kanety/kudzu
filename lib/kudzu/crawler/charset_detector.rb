@@ -4,13 +4,14 @@ require 'charlock_holmes'
 module Kudzu
   class Crawler
     class CharsetDetector
+      CORRECTION = {
+        'utf_8' => 'utf-8',
+        'shift-jis' => 'shift_jis',
+        'x-sjis' => 'shift_jis',
+        'euc_jp' => 'euc-jp'
+      }
+
       def initialize
-        @correction = {
-          'utf_8' => 'utf-8',
-          'shift-jis' => 'shift_jis',
-          'x-sjis' => 'shift_jis',
-          'euc_jp' => 'euc-jp'
-        }
         @parser = Kudzu::Util::ContentTypeParser.new
       end
 
@@ -66,7 +67,7 @@ module Kudzu
 
       def correct(charset)
         charset = charset.downcase
-        charset = @correction[charset] if @correction.key?(charset)
+        charset = CORRECTION[charset] if CORRECTION.key?(charset)
 
         begin
           Encoding.find(charset)
