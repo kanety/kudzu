@@ -3,11 +3,14 @@ module Kudzu
     module Base
       module Page
         def last_modified
-          response_header[:last_modified]
+          last_modified = response_header['last-modified']
+          Time.parse(last_modified) if last_modified
+        rescue
+          nil
         end
 
         def etag
-          response_header[:etag]
+          response_header['etag']
         end
 
         def html?
