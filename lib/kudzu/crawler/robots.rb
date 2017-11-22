@@ -63,7 +63,12 @@ module Kudzu
         uri = base_uri.dup
         uri.path = 'robots.txt'
         uri.fragment = uri.query = nil
-        @page_fetcher.fetch(uri.to_s)
+
+        begin
+          @page_fetcher.fetch(uri.to_s)
+        rescue
+          nil
+        end
       end
 
       class Txt
