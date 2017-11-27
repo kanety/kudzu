@@ -21,6 +21,7 @@ module Kudzu
       private
 
       def allowed_mime_type?(mime_type, config)
+        return true if mime_type.nil?
         @matcher.match?(mime_type, allows: config[:allow_mime_type], denies: config[:deny_mime_type])
       end
 
