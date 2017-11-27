@@ -37,6 +37,18 @@ module Kudzu
           200 <= status && status <= 299
         end
 
+        def status_redirection?
+          300 <= status && status <= 399
+        end
+
+        def status_client_error?
+          400 <= status && status <= 499
+        end
+
+        def status_server_error?
+          500 <= status && status <= 599
+        end
+
         def status_not_modified?
           status == 304
         end
@@ -55,6 +67,14 @@ module Kudzu
 
         def body=(body)
           @body = body
+        end
+
+        def filtered
+          @filtered
+        end
+
+        def filtered=(filtered)
+          @filtered = filtered
         end
 
         def decode_body

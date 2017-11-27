@@ -21,7 +21,7 @@ module Kudzu
       @config = dsl.config
     end
 
-    def prepare
+    def prepare(&block)
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
       @repository = Kudzu.adapter::Repository.new(@config)
 
@@ -33,6 +33,9 @@ module Kudzu
       @url_filter = UrlFilter.new(@config, @robots)
       @charset_detector = CharsetDetector.new
 
+      @callback = Callback.new
+      block.call(@callback) if block
+
       @revisit_scheduler = Revisit::Scheduler.new(@config)
       @content_type_parser = Util::ContentTypeParser.new
 
@@ -43,14 +46,14 @@ module Kudzu
     end
 
     def run(seed_url, &block)
-      prepare
+      prepare(&block)
 
       @frontier.enqueue(seed_url, depth: 1)
 
       if @config[:thread_num].to_i <= 1
-        single_thread(&block)
+        single_thread
       else
-        multi_thread(@config[:thread_num], &block)
+        multi_thread(@config[:thread_num])
       end
 
       @page_fetcher.pool.close
@@ -59,15 +62,15 @@ module Kudzu
 
     private
 
-    def single_thread(&block)
+    def single_thread
       loop do
         link = @frontier.dequeue.first
         break unless link
-        visit_link(link, &block)
+        visit_link(link)
       end
     end
 
-    def multi_thread(thread_num, &block)
+    def multi_thread(thread_num)
       @thread_pool = Util::ThreadPool.new(thread_num)
 
       @thread_pool.start do |queue|
@@ -76,36 +79,49 @@ module Kudzu
           queue.push(link)
         end
         link = queue.pop
-        visit_link(link, &block)
+        visit_link(link)
       end
 
       @thread_pool.wait
       @thread_pool.shutdown
     end
 
-    def visit_link(link, &block)
+    def visit_link(link)
       page = @repository.find_by_url(link.url)
       response = fetch_link(link, build_request_header(page))
       return unless response
 
       page.url = response.url
       page.status = response.status
-      page.response_header = response.header
       page.response_time = response.time
-      page.mime_type = @content_type_parser.parse(response.header['content-type']).first
       page.fetched_at = Time.now
 
       if page.status_success?
         handle_success(page, link, response)
       elsif page.status_not_modified?
-        handle_not_modified(page, link, response)
-      elsif page.status_not_found?
-        handle_not_found(page, link, response)
-      elsif page.status_gone?
-        handle_gone(page, link, response)
+        @revisit_scheduler.schedule(page, modified: false)
+        @repository.register(page)
+      elsif page.status_not_found? || page.status_gone?
+        @repository.delete(page)
       end
 
-      block.call(page) if block
+      run_callback(page, link)
+    end
+
+    def run_callback(page, link)
+      if page.status_success?
+        if page.filtered
+          @callback.run(:on_filter, page, link)
+        else
+          @callback.run(:on_success, page, link)
+        end
+      elsif page.status_redirection?
+        @callback.run(:on_redirection, page, link)
+      elsif page.status_client_error?
+        @callback.run(:on_client_error, page, link)
+      elsif page.status_server_error?
+        @callback.run(:on_server_error, page, link)
+      end
     end
 
     def build_request_header(page)
@@ -118,15 +134,12 @@ module Kudzu
     end
 
     def fetch_link(link, request_header)
-      if (response = @page_fetcher.fetch(link.url, request_header))
-        log :info, "page fetched: #{response.status} #{response.url}"
-        response
-      else
-        log :warn, "couldn't fetch page: #{link.url}"
-        nil
-      end
+      response = @page_fetcher.fetch(link.url, request_header)
+      log :info, "page fetched: #{response.status} #{response.url}"
+      response
     rescue Exception => e
       log :warn, "couldn't fetch page: #{link.url}", e
+      @callback.run(:failure, link, e)
       nil
     end
 
@@ -134,6 +147,8 @@ module Kudzu
       digest = Digest::MD5.hexdigest(response.body)
       @revisit_scheduler.schedule(page, modified: page.digest != digest)
 
+      page.response_header = response.header
+      page.mime_type = @content_type_parser.parse(response.header['content-type']).first
       page.body = response.body
       page.size = response.body.size
       page.digest = digest
@@ -149,21 +164,9 @@ module Kudzu
       if allowed_page?(page)
         @repository.register(page)
       else
+        page.filtered = true
         @repository.delete(page)
       end
-    end
-
-    def handle_not_modified(page, link, response)
-      @revisit_scheduler.schedule(page, modified: false)
-      @repository.register(page)
-    end
-
-    def handle_not_found(page, link, response)
-      @repository.delete(page)
-    end
-
-    def handle_gone(page, link, response)
-      @repository.delete(page)
     end
 
     def detect_charset(page)

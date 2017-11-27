@@ -24,8 +24,6 @@ module Kudzu
       def fetch(url, request_header = {}, max_redirect = @config[:max_redirect] || 5)
         uri = Addressable::URI.parse(url)
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
-        return unless http
-
         request = build_request(uri, request_header)
 
         @sleeper.delay(url)
