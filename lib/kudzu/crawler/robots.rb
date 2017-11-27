@@ -174,7 +174,6 @@ module Kudzu
         end
 
         def path_regexp(value)
-          value = Addressable::URI.parse(value).normalize.to_s
           Regexp.new('^' + Regexp.escape(value).gsub('\*', '.*').gsub('\$', '$'))
         rescue RegexpError
           UNMATCH_REGEXP
