@@ -5,7 +5,7 @@ module Kudzu
         mime, *kvs = content_type.to_s.split(';').map { |str| str.strip.downcase }
         params = kvs.each_with_object({}) do |kv, hash|
                    k, v = kv.to_s.split('=').map { |str| str.strip }
-                   hash[k.to_sym] = unquote(v)
+                   hash[k.to_sym] = unquote(v) if k && v
                  end
         return mime, params
       end
