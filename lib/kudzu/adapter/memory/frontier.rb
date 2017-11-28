@@ -9,12 +9,16 @@ module Kudzu
           @queued = {}
         end
 
-        def enqueue(urls, depth: 1)
+        def enqueue(anchors, depth: 1)
           @monitor.synchronize do
-            Array(urls).each do |url|
-              next if @queued.key?(url)
-              @queued[url] = true
-              @queue << Link.new(uuid: @uuid, url: url, state: 0, depth: depth)
+            Array(anchors).each do |anchor|
+              next if @queued.key?(anchor[:url])
+              @queued[anchor[:url]] = true
+              @queue << Link.new(uuid: @uuid,
+                                 url: anchor[:url],
+                                 title: anchor[:title],
+                                 state: 0,
+                                 depth: depth)
             end
           end
         end

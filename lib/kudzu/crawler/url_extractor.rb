@@ -5,72 +5,99 @@ module Kudzu
     class UrlExtractor < Kudzu::Configurable
       def initialize(config = {})
         @config = select_config(config, :url_filters, :respect_nofollow)
-        @content_type_parser = Kudzu::Util::ContentTypeParser.new
       end
 
       def extract(page)
-        config = find_filter_config(@config[:url_filters], page.url)
-
         if page.html?
-          extract_from_html(page.body, config)
+          FromHTML.new(@config).extract(page)
         elsif page.xml?
-          extract_from_xml(page.body, config)
+          FromXML.new(@config).extract(page)
         else
           []
         end
       end
 
-      private
+      class FromHTML < UrlExtractor
+        def initialize(config = {})
+          super
+          @content_type_parser = Kudzu::Util::ContentTypeParser.new
+        end
 
-      def extract_from_html(body, config = {})
-        doc = Nokogiri::HTML(body.encode('utf-8', undef: :replace, invalid: :replace))
+        def extract(page)
+          config = find_filter_config(@config[:url_filters], page.url)
 
-        if @config[:respect_nofollow]
-          if doc.xpath('//meta[@name]')
-                .any? { |meta| meta[:name] =~ /^robots$/i && meta[:content] =~ /nofollow/i }
-            return []
+          doc = Nokogiri::HTML(page.decoded_body)
+          return [] if nofollow?(doc)
+
+          if config[:allow_element]
+            doc = doc.search(*Array(config[:allow_element]))
+          end
+          if config[:deny_element]
+            doc.search(*Array(config[:deny_element])).remove
+          end
+
+          anchors = from_html(doc) + from_html_in_meta(doc)
+          anchors.reject { |anchor| anchor[:url].empty? }.uniq
+        end
+
+        private
+
+        def nofollow?(doc)
+          return false unless @config[:respect_nofollow]
+          nodes = doc.xpath('//meta[@name]')
+          nodes.any? { |node| node[:name] =~ /^robots$/i && node[:content] =~ /nofollow/i }
+        end
+
+        def from_html(doc)
+          nodes = doc.xpath('.//*[@href or @src]').to_a
+
+          if @config[:respect_nofollow]
+            nodes.reject! { |url| url[:rel] =~ /nofollow/i }
+          end
+
+          nodes.map { |node|
+            Hash[url: (node[:href] || node[:src]).to_s.strip,
+                 title: node_to_title(node)]
+          }
+        end
+
+        def node_to_title(node)
+          unless node.inner_text.empty?
+            node.inner_text
+          else
+            (node[:title] || node[:alt]).to_s
           end
         end
 
-        if config[:allow_element]
-          doc = doc.search(*Array(config[:allow_element]))
+        def from_html_in_meta(doc)
+          nodes = doc.xpath('.//meta[@http-equiv]').select { |node| node[:'http-equiv'] =~ /^refresh$/i }
+          urls = nodes.map { |node| @content_type_parser.parse(node[:content]).last[:url] }.compact
+          urls.map { |url| Hash[url: url.to_s.strip] }
         end
-        if config[:deny_element]
-          doc.search(*Array(config[:deny_element])).remove
-        end
-
-        urls = from_html_base(doc) + from_html_meta(doc)
-        urls.uniq
       end
 
-      def from_html_base(doc)
-        urls = doc.xpath('.//*[@href or @src]').to_a
-
-        if @config[:respect_nofollow]
-          urls.reject! { |url| url[:rel] =~ /nofollow/i }
+      class FromXML < UrlExtractor
+        def extract(page)
+          doc = Nokogiri::XML(page.decoded_body)
+          anchors = from_xml_rss(doc) + from_xml_atom(doc)
+          anchors.reject { |anchor| anchor[:url].empty? }.uniq
         end
 
-        urls.map { |node| node[:href] || node[:src] }.compact
-      end
+        private
 
-      def from_html_meta(doc)
-        metas = doc.xpath('.//meta[@http-equiv]')
-        metas.select { |meta| meta[:'http-equiv'] =~ /^refresh$/i }
-             .map { |meta| @content_type_parser.parse(meta[:content]).last[:url] }.compact
-      end
+        def from_xml_rss(doc)
+          doc.xpath('rss/channel').map { |node|
+            Hash[url: node.xpath('./item/link').inner_text.strip,
+                 title: node.xpath('./item/title').inner_text]
+          }
+        end
 
-      def extract_from_xml(body, config = {})
-        doc = Nokogiri::XML(body.encode('utf-8', undef: :replace, invalid: :replace))
-        urls = from_xml_rss(doc) + from_xml_atom(doc)
-        urls.uniq
-      end
-
-      def from_xml_rss(doc)
-        doc.xpath('rss/channel/item/link').map { |node| node.inner_text }
-      end
-
-      def from_xml_atom(doc)
-        doc.xpath('feed/entry/link[@href]').map { |node| node[:href] }
+        def from_xml_atom(doc)
+          doc.xpath('feed/entry').map { |node|
+            Hash[url: node.xpath('./link[@href]/@href').to_s.strip,
+                 title: node.xpath('./title').inner_text]
+          }
+        end
       end
     end
   end

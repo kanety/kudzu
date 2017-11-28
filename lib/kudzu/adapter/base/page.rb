@@ -77,6 +77,10 @@ module Kudzu
           @filtered = filtered
         end
 
+        def decoded_body
+          @decoded_body ||= decode_body
+        end
+
         def decode_body
           if text? && valid_encoding?(charset)
             body.force_encoding(charset).encode('utf-8', undef: :replace, invalid: :replace)

@@ -29,10 +29,11 @@ module Kudzu
       @page_fetcher = PageFetcher.new(@config, @robots)
       @page_filter = PageFilter.new(@config)
       @url_extractor = UrlExtractor.new(@config)
-      @url_normalizer = UrlNormalizer.new(@config)
+      @url_normalizer = UrlNormalizer.new
       @url_filter = UrlFilter.new(@config, @robots)
       @charset_detector = CharsetDetector.new
       @mime_type_detector = MimeTypeDetector.new
+      @title_parser = TitleParser.new
 
       @callback = Callback.new
       block.call(@callback) if block
@@ -48,7 +49,8 @@ module Kudzu
     def run(seed_url, &block)
       prepare(&block)
 
-      @frontier.enqueue(seed_url, depth: 1)
+      seeds = Array(seed_url).map { |url| Hash[url: url] }
+      @frontier.enqueue(seeds, depth: 1)
 
       if @config[:thread_num].to_i <= 1
         single_thread
@@ -154,13 +156,14 @@ module Kudzu
       page.digest = digest
       page.mime_type = detect_mime_type(page)
       page.charset = detect_charset(page) if page.text?
+      page.title = parse_title(page) if page.html?
       page.redirect_from = link.url if response.redirected?
 
       if follow_urls_from?(page, link)
-        urls = extract_urls(page)
-        urls = normalize_urls(urls, page.url)
-        urls = filter_urls(urls, page.url)
-        @frontier.enqueue(urls, depth: link.depth + 1)
+        anchors = extract_anchors(page)
+        anchors = normalize_anchors(anchors, page.url)
+        anchors = filter_anchors(anchors, page.url)
+        @frontier.enqueue(anchors, depth: link.depth + 1)
       end
 
       if allowed_page?(page)
@@ -183,32 +186,44 @@ module Kudzu
       log :warn, "couldn't detect charset for #{page.url}", e
     end
 
+    def parse_title(page)
+      @title_parser.parse(page)
+    rescue => e
+      log :warn, "couldn't parse title for #{page.url}", e
+    end
+
     def follow_urls_from?(page, link)
       (page.html? || page.xml?) && (@config[:max_depth].nil? || link.depth < @config[:max_depth].to_i)
     end
 
-    def extract_urls(page)
+    def extract_anchors(page)
       @url_extractor.extract(page)
     rescue => e
       log :warn, "couldn't extract links from #{page.url}", e
     end
 
-    def normalize_urls(urls, base_url)
-      urls.map { |url| normalize_url(url, base_url) }.compact.uniq
+    def normalize_anchors(anchors, base_url)
+      anchors.select do |anchor|
+        begin
+          anchor[:url] = @url_normalizer.normalize(anchor[:url], base_url)
+          !anchor[:url].to_s.empty?
+        rescue => e
+          log :warn, "couldn't normalize links for #{anchor[:url]}", e
+          false
+        end
+      end
     end
 
-    def normalize_url(url, base_url)
-      @url_normalizer.normalize(url, base_url)
-    rescue => e
-      log :warn, "couldn't normalize links for #{url}", e
-      nil
-    end
-
-    def filter_urls(urls, base_url)
-      passed, dropped = @url_filter.filter(urls, base_url)
-      passed.each { |url| log :debug, "link passed: #{url}" }
-      dropped.each { |url| log :debug, "link dropped: #{url}" }
-      passed
+    def filter_anchors(anchors, base_url)
+      anchors.select do |anchor|
+        if @url_filter.allowed?(anchor[:url], base_url)
+          log :debug, "link passed: #{anchor[:url]}"
+          true
+        else
+          log :debug, "link dropped: #{anchor[:url]}"
+          false
+        end
+      end
     end
 
     def allowed_page?(page)
