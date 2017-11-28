@@ -58,10 +58,13 @@ module Kudzu
       def from_text(text)
         if text.ascii_only?
           'ascii'
-        elsif (detection = CharlockHolmes::EncodingDetector.detect(text))
-          detection[:encoding].downcase
         else
-          'utf-8'
+          detection = CharlockHolmes::EncodingDetector.detect(text)
+          if detection && detection.key?(:encoding)
+            detection[:encoding].downcase
+          else
+            nil
+          end
         end
       end
 
