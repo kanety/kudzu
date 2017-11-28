@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
   s.add_dependency "charlock_holmes"
   s.add_dependency "shared-mime-info"
   s.add_dependency "mime-types"
+  s.add_dependency "http-cookie"
 
   s.add_development_dependency "rails"
   s.add_development_dependency "rspec-rails"

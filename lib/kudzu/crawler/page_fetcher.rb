@@ -1,4 +1,5 @@
 require 'net/http'
+require 'http-cookie'
 require 'kudzu/util/connection_pool'
 require 'kudzu/crawler/sleeper'
 
@@ -11,6 +12,10 @@ module Kudzu
         def initialize(attr = {})
           attr.each { |k, v| public_send("#{k}=", v) }
         end
+
+        def redirected?
+          redirected
+        end
       end
 
       attr_reader :pool
@@ -19,6 +24,7 @@ module Kudzu
         @config = select_config(config, :user_agent, :open_timeout, :read_timeout, :max_redirect)
         @pool = Util::ConnectionPool.new(config[:max_connection] || 100)
         @sleeper = Kudzu::Crawler::Sleeper.new(config, robots)
+        @jar = HTTP::CookieJar.new
       end
 
       def fetch(url, request_header: {}, redirect: max_redirect)
@@ -26,10 +32,14 @@ module Kudzu
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
         request = build_request(uri, request_header)
 
+        append_cookie(url, request)
+
         @sleeper.delay(url)
 
         response = nil
         response_time = Benchmark.realtime { response = http.request(request) }
+
+        parse_cookie(url, response)
 
         if redirection?(response.code) && response['location'] && redirect > 0
           fetch(uri.join(response['location']).to_s, request_header: request_header, redirect: redirect - 1)
@@ -83,6 +93,21 @@ module Kudzu
       def redirection?(code)
         code = code.to_i
         300 <= code && code <= 399
+      end
+
+      def parse_cookie(url, response)
+        @jar.parse(response['set-cookie'], url) if response['set-cookie']
+      end
+
+      def append_cookie(url, request)
+        cookies = @jar.cookies(url)
+        unless cookies.empty?
+          if request['Cookie']
+            request['Cookie'] += '; ' + cookies.join('; ')
+          else
+            request['Cookie'] = cookies.join('; ')
+          end
+        end
       end
     end
   end
