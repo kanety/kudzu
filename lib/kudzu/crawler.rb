@@ -32,12 +32,12 @@ module Kudzu
       @url_normalizer = UrlNormalizer.new(@config)
       @url_filter = UrlFilter.new(@config, @robots)
       @charset_detector = CharsetDetector.new
+      @mime_type_detector = MimeTypeDetector.new
 
       @callback = Callback.new
       block.call(@callback) if block
 
       @revisit_scheduler = Revisit::Scheduler.new(@config)
-      @content_type_parser = Util::ContentTypeParser.new
 
       if @config[:log_file]
         @logger = Logger.new(@config[:log_file])
@@ -148,10 +148,10 @@ module Kudzu
       @revisit_scheduler.schedule(page, modified: page.digest != digest)
 
       page.response_header = response.header
-      page.mime_type = @content_type_parser.parse(response.header['content-type']).first
       page.body = response.body
       page.size = response.body.size
       page.digest = digest
+      page.mime_type = detect_mime_type(page)
       page.charset = detect_charset(page) if page.text?
 
       if follow_urls_from?(page, link)
@@ -167,6 +167,12 @@ module Kudzu
         page.filtered = true
         @repository.delete(page)
       end
+    end
+
+    def detect_mime_type(page)
+      @mime_type_detector.detect(page)
+    rescue => e
+      log :warn, "couldn't detect mime type for #{page.url}", e
     end
 
     def detect_charset(page)
