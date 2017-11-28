@@ -91,6 +91,7 @@ module Kudzu
       response = fetch_link(link, build_request_header(page))
       return unless response
 
+      page = @repository.find_by_url(response.url) if response.redirected?
       page.url = response.url
       page.status = response.status
       page.response_time = response.time
@@ -153,7 +154,7 @@ module Kudzu
       page.digest = digest
       page.mime_type = detect_mime_type(page)
       page.charset = detect_charset(page) if page.text?
-      page.redirect_from = link.url if response.redirected
+      page.redirect_from = link.url if response.redirected?
 
       if follow_urls_from?(page, link)
         urls = extract_urls(page)
