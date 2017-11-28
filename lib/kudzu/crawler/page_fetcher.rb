@@ -6,7 +6,7 @@ module Kudzu
   class Crawler
     class PageFetcher < Kudzu::Configurable
       class Response
-        attr_accessor :url, :status, :header, :body, :time
+        attr_accessor :url, :status, :header, :body, :time, :redirected
   
         def initialize(attr = {})
           attr.each { |k, v| public_send("#{k}=", v) }
@@ -21,7 +21,7 @@ module Kudzu
         @sleeper = Kudzu::Crawler::Sleeper.new(config, robots)
       end
 
-      def fetch(url, request_header = {}, max_redirect = @config[:max_redirect] || 5)
+      def fetch(url, request_header: {}, redirect: max_redirect)
         uri = Addressable::URI.parse(url)
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
         request = build_request(uri, request_header)
@@ -31,14 +31,20 @@ module Kudzu
         response = nil
         response_time = Benchmark.realtime { response = http.request(request) }
 
-        if redirection?(response.code) && response['location'] && max_redirect > 0
-          fetch(uri.join(response['location']).to_s, request_header, max_redirect - 1)
+        if redirection?(response.code) && response['location'] && redirect > 0
+          fetch(uri.join(response['location']).to_s, request_header: request_header, redirect: redirect - 1)
         else
-          build_response(url, response, response_time)
+          res = build_response(url, response, response_time)
+          res.redirected = (redirect != max_redirect)
+          res
         end
       end
 
       private
+
+      def max_redirect
+        @config[:max_redirect] || 5
+      end
 
       def pool_name(uri)
         "#{uri.scheme}_#{uri.host}_#{uri.port || uri.default_port}"

@@ -134,7 +134,7 @@ module Kudzu
     end
 
     def fetch_link(link, request_header)
-      response = @page_fetcher.fetch(link.url, request_header)
+      response = @page_fetcher.fetch(link.url, request_header: request_header)
       log :info, "page fetched: #{response.status} #{response.url}"
       response
     rescue Exception => e
@@ -153,12 +153,13 @@ module Kudzu
       page.digest = digest
       page.mime_type = detect_mime_type(page)
       page.charset = detect_charset(page) if page.text?
+      page.redirect_from = link.url if response.redirected
 
       if follow_urls_from?(page, link)
-        follow_urls = extract_urls(page)
-        follow_urls = normalize_urls(follow_urls, page.url)
-        follow_urls = filter_urls(follow_urls, page.url)
-        @frontier.enqueue(follow_urls, depth: link.depth + 1)
+        urls = extract_urls(page)
+        urls = normalize_urls(urls, page.url)
+        urls = filter_urls(urls, page.url)
+        @frontier.enqueue(urls, depth: link.depth + 1)
       end
 
       if allowed_page?(page)
@@ -210,7 +211,9 @@ module Kudzu
     end
 
     def allowed_page?(page)
-      if @page_filter.allowed?(page) && !@repository.exist_same_content?(page)
+      if @page_filter.allowed?(page) &&
+         !@repository.exist_same_content?(page) &&
+         (!page.redirect_from || @url_filter.allowed?(page.url, page.redirect_from)) 
         log :info, "page passed: #{page.url}"
         true
       else

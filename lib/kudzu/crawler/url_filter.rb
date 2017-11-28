@@ -10,22 +10,32 @@ module Kudzu
       end
 
       def filter(urls, base_url)
-        base_uri = Addressable::URI.parse(base_url)
-        config = find_filter_config(@config[:url_filters], base_uri)
+        config = filter_config(base_url)
 
         urls.partition do |url|
-          uri = Addressable::URI.parse(url)
-          focused_host?(uri, base_uri, config) &&
-            focused_descendants?(uri, base_uri, config) &&
-            allowed_url?(uri, config) &&
-            allowed_host?(uri, config) &&
-            allowed_path?(uri, config) &&
-            allowed_ext?(uri, config) &&
-            allowed_by_robots?(uri, config)
+          allowed?(url, base_url, config: config)
         end
       end
 
+      def allowed?(url, base_url, config: nil)
+        uri = Addressable::URI.parse(url)
+        base_uri = Addressable::URI.parse(base_url)
+        config ||= filter_config(base_url)
+
+        focused_host?(uri, base_uri, config) &&
+          focused_descendants?(uri, base_uri, config) &&
+          allowed_url?(uri, config) &&
+          allowed_host?(uri, config) &&
+          allowed_path?(uri, config) &&
+          allowed_ext?(uri, config) &&
+          allowed_by_robots?(uri, config)
+      end
+
       private
+
+      def filter_config(base_url)
+        find_filter_config(@config[:url_filters], base_url)
+      end
 
       def focused_host?(uri, base_uri, config)
         return true unless config[:focus_host]

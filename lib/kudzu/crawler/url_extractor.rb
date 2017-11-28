@@ -9,8 +9,7 @@ module Kudzu
       end
 
       def extract(page)
-        uri = Addressable::URI.parse(page.url)
-        config = find_filter_config(@config[:url_filters], uri)
+        config = find_filter_config(@config[:url_filters], page.url)
 
         if page.html?
           extract_from_html(page.body, config)
