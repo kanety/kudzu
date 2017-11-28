@@ -4,7 +4,7 @@ module Kudzu
       module Page
         def last_modified
           last_modified = response_header['last-modified']
-          Time.parse(last_modified) if last_modified
+          Time.parse(last_modified).localtime if last_modified
         rescue
           nil
         end
