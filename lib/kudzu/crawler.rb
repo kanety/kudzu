@@ -2,6 +2,7 @@ require 'addressable'
 require 'nokogiri'
 require_relative 'common'
 require_relative 'configurable'
+require_relative 'logger'
 require_relative 'adapter/memory'
 require_relative 'crawler/all'
 require_relative 'revisit/all'
@@ -25,6 +26,8 @@ module Kudzu
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
       @repository = Kudzu.adapter::Repository.new(@config)
 
+      @logger = Kudzu::Logger.new(@config[:log_file], @config[:log_level])
+
       @robots = Robots.new(@config)
       @page_fetcher = PageFetcher.new(@config, @robots)
       @page_filter = PageFilter.new(@config)
@@ -39,11 +42,6 @@ module Kudzu
       block.call(@callback) if block
 
       @revisit_scheduler = Revisit::Scheduler.new(@config)
-
-      if @config[:log_file]
-        @logger = Logger.new(@config[:log_file])
-        @logger.level = @config[:log_level]
-      end
     end
 
     def run(seed_url, &block)
@@ -138,10 +136,10 @@ module Kudzu
 
     def fetch_link(link, request_header)
       response = @page_fetcher.fetch(link.url, request_header: request_header)
-      log :info, "page fetched: #{response.status} #{response.url}"
+      @logger.log :info, "page fetched: #{response.status} #{response.url}"
       response
     rescue Exception => e
-      log :warn, "couldn't fetch page: #{link.url}", e
+      @logger.log :warn, "couldn't fetch page: #{link.url}", error: e
       @callback.run(:failure, link, e)
       nil
     end
@@ -177,19 +175,19 @@ module Kudzu
     def detect_mime_type(page)
       @mime_type_detector.detect(page)
     rescue => e
-      log :warn, "couldn't detect mime type for #{page.url}", e
+      @logger.log :warn, "couldn't detect mime type for #{page.url}", error: e
     end
 
     def detect_charset(page)
       @charset_detector.detect(page)
     rescue => e
-      log :warn, "couldn't detect charset for #{page.url}", e
+      @logger.log :warn, "couldn't detect charset for #{page.url}", error: e
     end
 
     def parse_title(page)
       @title_parser.parse(page)
     rescue => e
-      log :warn, "couldn't parse title for #{page.url}", e
+      @logger.log :warn, "couldn't parse title for #{page.url}", error: e
     end
 
     def follow_urls_from?(page, link)
@@ -199,7 +197,7 @@ module Kudzu
     def extract_anchors(page)
       @url_extractor.extract(page)
     rescue => e
-      log :warn, "couldn't extract links from #{page.url}", e
+      @logger.log :warn, "couldn't extract links from #{page.url}", error: e
     end
 
     def normalize_anchors(anchors, base_url)
@@ -208,7 +206,7 @@ module Kudzu
           anchor[:url] = @url_normalizer.normalize(anchor[:url], base_url)
           !anchor[:url].to_s.empty?
         rescue => e
-          log :warn, "couldn't normalize links for #{anchor[:url]}", e
+          @logger.log :warn, "couldn't normalize links for #{anchor[:url]}", error: e
           false
         end
       end
@@ -217,10 +215,10 @@ module Kudzu
     def filter_anchors(anchors, base_url)
       anchors.select do |anchor|
         if @url_filter.allowed?(anchor[:url], base_url)
-          log :debug, "link passed: #{anchor[:url]}"
+          @logger.log :debug, "link passed: #{anchor[:url]}"
           true
         else
-          log :debug, "link dropped: #{anchor[:url]}"
+          @logger.log :debug, "link dropped: #{anchor[:url]}"
           false
         end
       end
@@ -230,18 +228,12 @@ module Kudzu
       if @page_filter.allowed?(page) &&
          !@repository.exist_same_content?(page) &&
          (!page.redirect_from || @url_filter.allowed?(page.url, page.redirect_from)) 
-        log :info, "page passed: #{page.url}"
+        @logger.log :info, "page passed: #{page.url}"
         true
       else
-        log :info, "page dropped: #{page.url}"
+        @logger.log :info, "page dropped: #{page.url}"
         false
       end
-    end
-
-    def log(level, message, ex = nil)
-      return unless @logger
-      message += " #{ex.class} #{ex.message} #{ex.backtrace.join("\n")}" if ex
-      @logger.send(level, message)
     end
   end
 end

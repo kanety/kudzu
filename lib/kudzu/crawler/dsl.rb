@@ -19,7 +19,6 @@ module Kudzu
                            respect_nofollow: true,
                            respect_noindex: true,
                            save_content: true,
-                           log_level: :debug,
                            revisit_mode: false,
                            revisit_min_interval: 1,
                            revisit_max_interval: 10,
