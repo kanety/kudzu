@@ -79,6 +79,7 @@ module Kudzu
       class FromXML < UrlExtractor
         def extract(page)
           doc = Nokogiri::XML(page.decoded_body)
+          doc.remove_namespaces!
           anchors = from_xml_rss(doc) + from_xml_atom(doc)
           anchors.reject { |anchor| anchor[:url].empty? }.uniq
         end
