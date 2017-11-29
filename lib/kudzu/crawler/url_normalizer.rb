@@ -1,9 +1,6 @@
 module Kudzu
   class Crawler
-    class UrlNormalizer < Kudzu::Configurable
-      def initialize(config = {})
-      end
-
+    class UrlNormalizer
       def normalize(url, base_url)
         uri = Addressable::URI.parse(base_url.to_s).join(url.to_s).normalize
         uri.path = '/' unless uri.path

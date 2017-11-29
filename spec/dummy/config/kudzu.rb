@@ -1,5 +1,7 @@
 log_file STDOUT
 
+log_level :debug
+
 max_connection 0
 
 default_request_header key: 'value'

@@ -4,7 +4,7 @@ module Kudzu
       module Page
         def last_modified
           last_modified = response_header['last-modified']
-          Time.parse(last_modified) if last_modified
+          Time.parse(last_modified).localtime if last_modified
         rescue
           nil
         end
@@ -37,6 +37,18 @@ module Kudzu
           200 <= status && status <= 299
         end
 
+        def status_redirection?
+          300 <= status && status <= 399
+        end
+
+        def status_client_error?
+          400 <= status && status <= 499
+        end
+
+        def status_server_error?
+          500 <= status && status <= 599
+        end
+
         def status_not_modified?
           status == 304
         end
@@ -57,15 +69,29 @@ module Kudzu
           @body = body
         end
 
+        def filtered
+          @filtered
+        end
+
+        def filtered=(filtered)
+          @filtered = filtered
+        end
+
+        def decoded_body
+          @decoded_body ||= decode_body
+        end
+
+        private
+
         def decode_body
-          if text? && valid_encoding?(charset)
+          if text? && find_encoding
             body.force_encoding(charset).encode('utf-8', undef: :replace, invalid: :replace)
           else
             body
           end
         end
 
-        def valid_encoding?(charset)
+        def find_encoding
           Encoding.find(charset)
         rescue
           nil

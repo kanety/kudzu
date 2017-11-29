@@ -10,8 +10,7 @@ module Kudzu
       end
 
       def allowed?(page)
-        uri = Addressable::URI.parse(page.url)
-        config = find_filter_config(@config[:page_filters], uri)
+        config = find_filter_config(@config[:page_filters], page.url)
 
         allowed_mime_type?(page.mime_type, config) &&
           allowed_size?(page.size, config) &&
@@ -21,6 +20,7 @@ module Kudzu
       private
 
       def allowed_mime_type?(mime_type, config)
+        return true if mime_type.nil?
         @matcher.match?(mime_type, allows: config[:allow_mime_type], denies: config[:deny_mime_type])
       end
 

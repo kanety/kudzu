@@ -4,11 +4,12 @@ module Kudzu
       config.select { |k, _| keys.include?(k) }
     end
 
-    def find_filter_config(filters, base_uri)
-      filters.each do |host, path_filters|
-        if Kudzu::Common.match?(base_uri.host, host)
+    def find_filter_config(filters, uri)
+      uri = Addressable::URI.parse(uri) if uri.is_a?(String)
+      Array(filters).each do |host, path_filters|
+        if Kudzu::Common.match?(uri.host, host)
           path_filters.each do |path, filter|
-            if Kudzu::Common.match?(base_uri.path, path)
+            if Kudzu::Common.match?(uri.path, path)
               return filter.config
             end
           end

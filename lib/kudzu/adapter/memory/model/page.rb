@@ -4,8 +4,8 @@ module Kudzu
       class Page
         include Kudzu::Adapter::Base::Page
 
-        attr_accessor :url, :status, :mime_type, :size, :charset, :digest,
-                      :response_header, :response_time, :fetched_at,
+        attr_accessor :url, :title, :status, :mime_type, :size, :charset, :digest,
+                      :response_header, :response_time, :redirect_from, :fetched_at,
                       :revisit_interval, :revisit_at
 
         def initialize(attr = {})
