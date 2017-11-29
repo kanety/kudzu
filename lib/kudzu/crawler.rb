@@ -23,10 +23,13 @@ module Kudzu
     end
 
     def prepare(&block)
-      @frontier = Kudzu.adapter::Frontier.new(@uuid)
-      @repository = Kudzu.adapter::Repository.new(@config)
+      @callback = Callback.new
+      block.call(@callback) if block
 
       @logger = Kudzu::Logger.new(@config[:log_file], @config[:log_level])
+
+      @frontier = Kudzu.adapter::Frontier.new(@uuid)
+      @repository = Kudzu.adapter::Repository.new(@config)
 
       @robots = Robots.new(@config)
       @page_fetcher = PageFetcher.new(@config, @robots)
@@ -38,9 +41,6 @@ module Kudzu
       @mime_type_detector = MimeTypeDetector.new
       @title_parser = TitleParser.new
 
-      @callback = Callback.new
-      block.call(@callback) if block
-
       @revisit_scheduler = Revisit::Scheduler.new(@config)
     end
 
@@ -48,7 +48,7 @@ module Kudzu
       prepare(&block)
 
       seeds = Array(seed_url).map { |url| Hash[url: url] }
-      @frontier.enqueue(seeds, depth: 1)
+      enqueue_anchors(seeds, 1)
 
       if @config[:thread_num].to_i <= 1
         single_thread
@@ -101,9 +101,9 @@ module Kudzu
         handle_success(page, link, response)
       elsif page.status_not_modified?
         @revisit_scheduler.schedule(page, modified: false)
-        @repository.register(page)
+        register_page(page)
       elsif page.status_not_found? || page.status_gone?
-        @repository.delete(page)
+        delete_page(page)
       end
 
       run_callback(page, link)
@@ -112,16 +112,16 @@ module Kudzu
     def run_callback(page, link)
       if page.status_success?
         if page.filtered
-          @callback.run(:on_filter, page, link)
+          @callback.on(:filter, page, link)
         else
-          @callback.run(:on_success, page, link)
+          @callback.on(:success, page, link)
         end
       elsif page.status_redirection?
-        @callback.run(:on_redirection, page, link)
+        @callback.on(:redirection, page, link)
       elsif page.status_client_error?
-        @callback.run(:on_client_error, page, link)
+        @callback.on(:client_error, page, link)
       elsif page.status_server_error?
-        @callback.run(:on_server_error, page, link)
+        @callback.on(:server_error, page, link)
       end
     end
 
@@ -140,7 +140,7 @@ module Kudzu
       response
     rescue Exception => e
       @logger.log :warn, "couldn't fetch page: #{link.url}", error: e
-      @callback.run(:failure, link, e)
+      @callback.on(:failure, link, e)
       nil
     end
 
@@ -161,14 +161,14 @@ module Kudzu
         anchors = extract_anchors(page)
         anchors = normalize_anchors(anchors, page.url)
         anchors = filter_anchors(anchors, page.url)
-        @frontier.enqueue(anchors, depth: link.depth + 1)
+        enqueue_anchors(anchors, link.depth + 1) unless anchors.empty?
       end
 
       if allowed_page?(page)
-        @repository.register(page)
+        register_page(page)
       else
         page.filtered = true
-        @repository.delete(page)
+        delete_page(page)
       end
     end
 
@@ -233,6 +233,31 @@ module Kudzu
       else
         @logger.log :info, "page dropped: #{page.url}"
         false
+      end
+    end
+
+    def register_page(page)
+      @callback.around(:register, page) do
+        @repository.register(page)
+      end
+    end
+
+    def delete_page(page)
+      @callback.around(:delete, page) do
+        @repository.delete(page)
+      end
+    end
+
+    def enqueue_anchors(anchors, depth)
+      links = anchors.map do |anchor|
+                Kudzu.adapter::Link.new(uuid: @uuid,
+                                       url: anchor[:url],
+                                       title: anchor[:title],
+                                       state: 0,
+                                       depth: depth)
+              end
+      @callback.around(:enqueue, links) do
+        @frontier.enqueue(links, depth: depth)
       end
     end
   end
