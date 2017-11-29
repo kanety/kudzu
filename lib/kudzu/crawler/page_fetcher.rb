@@ -21,7 +21,7 @@ module Kudzu
       attr_reader :pool
 
       def initialize(config = {}, robots = nil)
-        @config = select_config(config, :user_agent, :open_timeout, :read_timeout, :max_redirect)
+        @config = select_config(config, :user_agent, :open_timeout, :read_timeout, :max_redirect, :handle_cookie)
         @pool = Util::ConnectionPool.new(config[:max_connection] || 100)
         @sleeper = Kudzu::Crawler::Sleeper.new(config, robots)
         @jar = HTTP::CookieJar.new
@@ -32,14 +32,14 @@ module Kudzu
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
         request = build_request(uri, request_header)
 
-        append_cookie(url, request)
+        append_cookie(url, request) if @config[:handle_cookie]
 
         @sleeper.delay(url)
 
         response = nil
         response_time = Benchmark.realtime { response = http.request(request) }
 
-        parse_cookie(url, response)
+        parse_cookie(url, response) if @config[:handle_cookie]
 
         if redirection?(response.code) && response['location'] && redirect > 0
           fetch(uri.join(response['location']).to_s, request_header: request_header, redirect: redirect - 1)

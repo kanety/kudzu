@@ -2,7 +2,7 @@ module Kudzu
   class Crawler
     class DSL
       SIMPLE_CONFIGS   = [:user_agent, :thread_num, :open_timeout, :read_timeout,
-                          :max_connection, :max_redirect, :max_depth, :default_request_header, :delay,
+                          :max_connection, :max_redirect, :max_depth, :default_request_header, :delay, :handle_cookie,
                           :respect_robots_txt, :respect_nofollow, :respect_noindex,
                           :save_content, :log_file, :log_level,
                           :revisit_mode, :revisit_min_interval, :revisit_max_interval, :revisit_default_interval,
@@ -14,6 +14,7 @@ module Kudzu
                            max_connection: 10,
                            max_redirect: 3,
                            delay: 0.5,
+                           handle_cookie: true,
                            respect_robots_txt: true,
                            respect_nofollow: true,
                            respect_noindex: true,

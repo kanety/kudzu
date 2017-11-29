@@ -81,15 +81,17 @@ module Kudzu
           @decoded_body ||= decode_body
         end
 
+        private
+
         def decode_body
-          if text? && valid_encoding?(charset)
+          if text? && find_encoding
             body.force_encoding(charset).encode('utf-8', undef: :replace, invalid: :replace)
           else
             body
           end
         end
 
-        def valid_encoding?(charset)
+        def find_encoding
           Encoding.find(charset)
         rescue
           nil
