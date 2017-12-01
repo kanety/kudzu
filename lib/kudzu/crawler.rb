@@ -151,11 +151,12 @@ module Kudzu
       page.response_header = response.header
       page.body = response.body
       page.size = response.body.size
-      page.digest = digest
       page.mime_type = detect_mime_type(page)
       page.charset = detect_charset(page) if page.text?
       page.title = parse_title(page) if page.html?
       page.redirect_from = link.url if response.redirected?
+      page.revised_at = Time.now if page.digest != digest
+      page.digest = digest
 
       if follow_urls_from?(page, link)
         anchors = extract_anchors(page)
@@ -176,18 +177,21 @@ module Kudzu
       @mime_type_detector.detect(page)
     rescue => e
       @logger.log :warn, "couldn't detect mime type for #{page.url}", error: e
+      nil
     end
 
     def detect_charset(page)
       @charset_detector.detect(page)
     rescue => e
       @logger.log :warn, "couldn't detect charset for #{page.url}", error: e
+      nil
     end
 
     def parse_title(page)
       @title_parser.parse(page)
     rescue => e
       @logger.log :warn, "couldn't parse title for #{page.url}", error: e
+      nil
     end
 
     def follow_urls_from?(page, link)
@@ -198,6 +202,7 @@ module Kudzu
       @url_extractor.extract(page)
     rescue => e
       @logger.log :warn, "couldn't extract links from #{page.url}", error: e
+      []
     end
 
     def normalize_anchors(anchors, base_url)
