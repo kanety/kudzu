@@ -35,7 +35,6 @@ module Kudzu
       @page_fetcher = PageFetcher.new(@config, @robots)
       @page_filter = PageFilter.new(@config)
       @url_extractor = UrlExtractor.new(@config)
-      @url_normalizer = UrlNormalizer.new
       @url_filter = UrlFilter.new(@config, @robots)
       @charset_detector = CharsetDetector.new
       @mime_type_detector = MimeTypeDetector.new
@@ -47,8 +46,8 @@ module Kudzu
     def run(seed_url, &block)
       prepare(&block)
 
-      seeds = Array(seed_url).map { |url| Hash[url: url] }
-      enqueue_anchors(seeds, 1)
+      seeds = Array(seed_url).map { |url| { url: url } }
+      enqueue_hrefs(seeds, 1)
 
       if @config[:thread_num].to_i <= 1
         single_thread
@@ -158,11 +157,9 @@ module Kudzu
       page.revised_at = Time.now if page.digest != digest
       page.digest = digest
 
-      if follow_urls_from?(page, link)
-        anchors = extract_anchors(page)
-        anchors = normalize_anchors(anchors, page.url)
-        anchors = filter_anchors(anchors, page.url)
-        enqueue_anchors(anchors, link.depth + 1) unless anchors.empty?
+      if follow_hrefs_from?(page, link)
+        hrefs = extract_hrefs(page, page.url)
+        enqueue_hrefs(hrefs, link.depth + 1) unless hrefs.empty?
       end
 
       if allowed_page?(page)
@@ -194,39 +191,24 @@ module Kudzu
       nil
     end
 
-    def follow_urls_from?(page, link)
+    def follow_hrefs_from?(page, link)
       (page.html? || page.xml?) && (@config[:max_depth].nil? || link.depth < @config[:max_depth].to_i)
     end
 
-    def extract_anchors(page)
-      @url_extractor.extract(page)
+    def extract_hrefs(page, base_url)
+      hrefs = @url_extractor.extract(page, base_url)
+      hrefs.select do |href|
+        if @url_filter.allowed?(href[:url], base_url)
+          @logger.log :debug, "link passed: #{href[:url]}"
+          true
+        else
+          @logger.log :debug, "link dropped: #{href[:url]}"
+          false
+        end
+      end
     rescue => e
       @logger.log :warn, "couldn't extract links from #{page.url}", error: e
       []
-    end
-
-    def normalize_anchors(anchors, base_url)
-      anchors.select do |anchor|
-        begin
-          anchor[:url] = @url_normalizer.normalize(anchor[:url], base_url)
-          !anchor[:url].to_s.empty?
-        rescue => e
-          @logger.log :warn, "couldn't normalize links for #{anchor[:url]}", error: e
-          false
-        end
-      end
-    end
-
-    def filter_anchors(anchors, base_url)
-      anchors.select do |anchor|
-        if @url_filter.allowed?(anchor[:url], base_url)
-          @logger.log :debug, "link passed: #{anchor[:url]}"
-          true
-        else
-          @logger.log :debug, "link dropped: #{anchor[:url]}"
-          false
-        end
-      end
     end
 
     def allowed_page?(page)
@@ -253,11 +235,11 @@ module Kudzu
       end
     end
 
-    def enqueue_anchors(anchors, depth)
-      links = anchors.map do |anchor|
+    def enqueue_hrefs(hrefs, depth)
+      links = hrefs.map do |href|
                 Kudzu.adapter::Link.new(uuid: @uuid,
-                                       url: anchor[:url],
-                                       title: anchor[:title],
+                                       url: href[:url],
+                                       title: href[:title],
                                        state: 0,
                                        depth: depth)
               end

@@ -7,13 +7,29 @@ module Kudzu
         @config = select_config(config, :url_filters, :respect_nofollow)
       end
 
-      def extract(page)
-        if page.html?
-          FromHTML.new(@config).extract(page)
-        elsif page.xml?
-          FromXML.new(@config).extract(page)
+      def extract(page, base_url)
+        hrefs = if page.html?
+                  FromHTML.new(@config).extract(page)
+                elsif page.xml?
+                  FromXML.new(@config).extract(page)
+                else
+                  []
+                end
+
+        hrefs.select do |href|
+          href[:url] = normalize(href[:url], base_url)
+        end
+      end
+
+      def normalize(url, base_url)
+        uri = Addressable::URI.parse(base_url.to_s).join(url.to_s).normalize
+        uri.path = '/' unless uri.path
+        uri.fragment = nil
+
+        if uri.scheme.in?(%w(http https))
+          uri.to_s
         else
-          []
+          nil
         end
       end
 
@@ -36,8 +52,8 @@ module Kudzu
             doc.search(*Array(config[:deny_element])).remove
           end
 
-          anchors = from_html(doc) + from_html_in_meta(doc)
-          anchors.reject { |anchor| anchor[:url].empty? }.uniq
+          hrefs = from_html(doc) + from_html_in_meta(doc)
+          hrefs.reject { |href| href[:url].empty? }.uniq
         end
 
         private
@@ -56,8 +72,8 @@ module Kudzu
           end
 
           nodes.map { |node|
-            Hash[url: (node[:href] || node[:src]).to_s.strip,
-                 title: node_to_title(node)]
+            { url: (node[:href] || node[:src]).to_s.strip,
+              title: node_to_title(node) }
           }
         end
 
@@ -72,7 +88,7 @@ module Kudzu
         def from_html_in_meta(doc)
           nodes = doc.xpath('.//meta[@http-equiv]').select { |node| node[:'http-equiv'] =~ /^refresh$/i }
           urls = nodes.map { |node| @content_type_parser.parse(node[:content]).last[:url] }.compact
-          urls.map { |url| Hash[url: url.to_s.strip] }
+          urls.map { |url| { url: url.to_s.strip } }
         end
       end
 
@@ -80,23 +96,23 @@ module Kudzu
         def extract(page)
           doc = Nokogiri::XML(page.decoded_body)
           doc.remove_namespaces!
-          anchors = from_xml_rss(doc) + from_xml_atom(doc)
-          anchors.reject { |anchor| anchor[:url].empty? }.uniq
+          hrefs = from_xml_rss(doc) + from_xml_atom(doc)
+          hrefs.reject { |href| href[:url].empty? }.uniq
         end
 
         private
 
         def from_xml_rss(doc)
           doc.xpath('rss/channel').map { |node|
-            Hash[url: node.xpath('./item/link').inner_text.strip,
-                 title: node.xpath('./item/title').inner_text]
+            { url: node.xpath('./item/link').inner_text.strip,
+              title: node.xpath('./item/title').inner_text }
           }
         end
 
         def from_xml_atom(doc)
           doc.xpath('feed/entry').map { |node|
-            Hash[url: node.xpath('./link[@href]/@href').to_s.strip,
-                 title: node.xpath('./title').inner_text]
+            { url: node.xpath('./link[@href]/@href').to_s.strip,
+              title: node.xpath('./title').inner_text }
           }
         end
       end
