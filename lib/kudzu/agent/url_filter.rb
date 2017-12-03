@@ -1,6 +1,6 @@
 module Kudzu
-  class Url
-    class Filter
+  class Agent
+    class UrlFilter
       def initialize(config)
         @config = config
         @matcher = Kudzu::Util::Matcher.new

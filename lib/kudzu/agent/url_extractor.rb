@@ -1,8 +1,8 @@
 require 'nokogiri'
 
 module Kudzu
-  class Url
-    class Extractor
+  class Agent
+    class UrlExtractor
       def initialize(config)
         @config = config
       end
@@ -35,7 +35,7 @@ module Kudzu
         end
       end
 
-      class FromHTML < Extractor
+      class FromHTML < UrlExtractor
         def initialize(config)
           super
           @content_type_parser = Kudzu::Util::ContentTypeParser.new
@@ -95,7 +95,7 @@ module Kudzu
         end
       end
 
-      class FromXML < Extractor
+      class FromXML < UrlExtractor
         def extract(page)
           doc = Nokogiri::XML(page.decoded_body)
           doc.remove_namespaces!

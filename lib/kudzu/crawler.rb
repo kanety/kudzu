@@ -1,12 +1,12 @@
 require 'addressable'
 require 'nokogiri'
 require_relative 'common'
+require_relative 'config'
+require_relative 'callback'
 require_relative 'logger'
 require_relative 'adapter/memory'
 require_relative 'util/all'
-require_relative 'crawler/all'
 require_relative 'agent/all'
-require_relative 'url/all'
 require_relative 'revisit/all'
 
 module Kudzu
@@ -17,13 +17,13 @@ module Kudzu
     def initialize(options = {})
       @uuid = options[:uuid] || SecureRandom.uuid
 
-      @config = Kudzu::Crawler::Config.new(options)
+      @config = Kudzu::Config.new(options)
       yield @config if block_given?
     end
 
     def prepare(&block)
       @logger = Kudzu::Logger.new(@config.log_file, @config.log_level)
-      @callback = Kudzu::Crawler::Callback.new(&block)
+      @callback = Kudzu::Callback.new(&block)
 
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
       @repository = Kudzu.adapter::Repository.new(@config)
@@ -35,8 +35,8 @@ module Kudzu
       @mime_type_detector = Kudzu::Agent::MimeTypeDetector.new
       @title_parser = Kudzu::Agent::TitleParser.new
 
-      @url_extractor = Kudzu::Url::Extractor.new(@config)
-      @url_filter = Kudzu::Url::Filter.new(@config)
+      @url_extractor = Kudzu::Agent::UrlExtractor.new(@config)
+      @url_filter = Kudzu::Agent::UrlFilter.new(@config)
 
       @revisit_scheduler = Kudzu::Revisit::Scheduler.new(@config)
     end
