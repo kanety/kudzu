@@ -14,11 +14,9 @@ module Kudzu
     attr_reader :uuid, :dsl
     attr_reader :frontier, :repository
 
-    def initialize(options = {})
+    def initialize(options = {}, &block)
       @uuid = options[:uuid] || SecureRandom.uuid
-
-      @config = Kudzu::Config.new(options)
-      yield @config if block_given?
+      @config = Kudzu::Config.new(options, &block)
     end
 
     def prepare(&block)

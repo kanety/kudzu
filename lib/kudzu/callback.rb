@@ -16,7 +16,7 @@ module Kudzu
 
     def initialize(&block)
       @callback = {}
-      block.call(self) if block
+      instance_eval(&block) if block
     end
 
     CALLBACKS.each do |key|

@@ -1,21 +1,21 @@
-log_file = ::Logger.new(STDOUT)
-log_file.level = :debug
+log_file ::Logger.new(STDOUT)
+log_level :debug
 
-max_connection = 0
+max_connection 0
 
-default_request_header = { key: 'value' }
+default_request_header key: 'value'
 
-save_content = false
+save_content false
 
-add_filter do |filter|
-  filter.focus_host = true
-  filter.focus_descendants = true
-  filter.allow_path = '/test/*'
-  filter.deny_path = '/test/xml/*'
-  filter.allow_element = 'html/body'
-  filter.deny_element = 'html/head'
+add_filter do
+  focus_host true
+  focus_descendants true
+  allow_path '/test/*'
+  deny_path '/test/xml/*'
+  allow_element 'html/body'
+  deny_element 'html/head'
 
-  filter.allow_mime_type = %r|^text/.*$|
-  filter.deny_mime_type = %r|^text/css$|
-  filter.max_size = 1000
+  allow_mime_type %r|^text/.*$|
+  deny_mime_type %r|^text/css$|
+  max_size 1000
 end

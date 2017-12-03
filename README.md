@@ -40,15 +40,15 @@ Then run:
 Crawl html files in `example.com`:
 
 ```ruby
-crawler = Kudzu::Crawler.new do |config|
-  config.user_agent = 'YOUR_AWESOME_APP'
-  config.add_filter do |filter|
-    filter.focus_host = true
-    filter.allow_mime_type = %w(text/html)
+crawler = Kudzu::Crawler.new do
+  user_agent 'YOUR_AWESOME_APP'
+  add_filter do
+    focus_host true
+    allow_mime_type %w(text/html)
   end
 end
-crawler.run('http://example.com/') do |callback|
-  callback.on_success do |page, link|
+crawler.run('http://example.com/') do
+  on_success do |page, link|
     puts page.url
   end
 end
