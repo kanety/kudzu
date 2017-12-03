@@ -1,7 +1,6 @@
 require 'addressable'
 require 'nokogiri'
 require_relative 'common'
-require_relative 'configurable'
 require_relative 'logger'
 require_relative 'adapter/memory'
 require_relative 'util/all'
@@ -15,17 +14,15 @@ module Kudzu
     attr_reader :uuid, :dsl
     attr_reader :frontier, :repository
 
-    def initialize(options = {}, &block)
-      @dsl = DSL.new(options)
-      @dsl.instance_eval(&block) if block
-      @dsl.instance_eval(File.read(options[:config_file])) if options.key?(:config_file)
-
+    def initialize(options = {})
       @uuid = options[:uuid] || SecureRandom.uuid
-      @config = dsl.config
+
+      @config = Kudzu::Crawler::Config.new(options)
+      yield @config if block_given?
     end
 
     def prepare(&block)
-      @logger = Kudzu::Logger.new(@config[:log_file], @config[:log_level])
+      @logger = Kudzu::Logger.new(@config.log_file, @config.log_level)
       @callback = Kudzu::Crawler::Callback.new(&block)
 
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
@@ -41,7 +38,7 @@ module Kudzu
       @url_extractor = Kudzu::Url::Extractor.new(@config)
       @url_filter = Kudzu::Url::Filter.new(@config)
 
-      @revisit_scheduler = Revisit::Scheduler.new(@config)
+      @revisit_scheduler = Kudzu::Revisit::Scheduler.new(@config)
     end
 
     def run(seed_url, &block)
@@ -50,10 +47,10 @@ module Kudzu
       seeds = Array(seed_url).map { |url| { url: url } }
       enqueue_hrefs(seeds, 1)
 
-      if @config[:thread_num].to_i <= 1
+      if @config.thread_num.to_i <= 1
         single_thread
       else
-        multi_thread(@config[:thread_num])
+        multi_thread(@config.thread_num)
       end
 
       @page_fetcher.pool.close
@@ -126,8 +123,8 @@ module Kudzu
     end
 
     def build_request_header(page)
-      header = @config[:default_request_header].to_h
-      if @config[:revisit_mode]
+      header = @config.default_request_header.to_h
+      if @config.revisit_mode
         header['If-Modified-Since'] = page.last_modified.httpdate if page.last_modified
         header['If-None-Match'] = page.etag if page.etag
       end
@@ -193,7 +190,7 @@ module Kudzu
     end
 
     def follow_hrefs_from?(page, link)
-      (page.html? || page.xml?) && (@config[:max_depth].nil? || link.depth < @config[:max_depth].to_i)
+      (page.html? || page.xml?) && (@config.max_depth.nil? || link.depth < @config.max_depth.to_i)
     end
 
     def extract_hrefs(page, base_url)
@@ -208,7 +205,7 @@ module Kudzu
 
     def allowed_url?(url, base_url)
       if @url_filter.allowed?(url, base_url)
-        if !@config[:respect_robots_txt] || @robots.allowed?(url)
+        if !@config.respect_robots_txt || @robots.allowed?(url)
           @logger.log :debug, "url passed: #{url}"
           true
         else

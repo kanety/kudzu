@@ -4,9 +4,8 @@ module Kudzu
       class Repository
         attr_reader :page
 
-        def initialize(config = {})
-          config_keys = [:save_content]
-          @config = config.select { |k, _| config_keys.include?(k) }
+        def initialize(config)
+          @config = config
           @page = {}
           @digest = {}
         end
@@ -16,7 +15,7 @@ module Kudzu
         end
 
         def register(page)
-          unless @config[:save_content]
+          unless @config.save_content
             page.body = nil
           end
           @page[page.url] = page

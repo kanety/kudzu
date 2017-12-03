@@ -1,8 +1,8 @@
 module Kudzu
   class Agent
-    class Sleeper < Kudzu::Configurable
-      def initialize(config = {}, robots = nil)
-        @config = select_config(config, :delay, :respect_robots_txt)
+    class Sleeper
+      def initialize(config, robots = nil)
+        @config = config
         @robots = robots
         @monitor = Monitor.new
         @last_accessed = {}
@@ -19,10 +19,10 @@ module Kudzu
       private
 
       def delay_second(url)
-        if @config[:respect_robots_txt] && @robots && @robots.crawl_delay(url)
+        if @config.respect_robots_txt && @robots && @robots.crawl_delay(url)
           @robots.crawl_delay(url).to_f
-        elsif @config[:delay]
-          @config[:delay].to_f
+        elsif @config.delay
+          @config.delay.to_f
         end
       end
 

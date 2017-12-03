@@ -1,8 +1,8 @@
 module Kudzu
   class Revisit
-    class Scheduler < Kudzu::Configurable
-      def initialize(config = {})
-        @config = select_config(config, :revisit_min_interval, :revisit_max_interval, :revisit_default_interval)
+    class Scheduler
+      def initialize(config)
+        @config = config
       end
 
       def schedule(page, modified: true)
@@ -15,12 +15,12 @@ module Kudzu
       def next_interval(curr_interval, modified)
         if curr_interval
           if modified
-            [curr_interval - 1, @config[:revisit_min_interval]].max
+            [curr_interval - 1, @config.revisit_min_interval].max
           else
-            [curr_interval + 1, @config[:revisit_max_interval]].min
+            [curr_interval + 1, @config.revisit_max_interval].min
           end
         else
-          @config[:revisit_default_interval]
+          @config.revisit_default_interval
         end
       end
     end

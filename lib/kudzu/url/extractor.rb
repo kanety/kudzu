@@ -2,9 +2,9 @@ require 'nokogiri'
 
 module Kudzu
   class Url
-    class Extractor < Kudzu::Configurable
-      def initialize(config = {})
-        @config = select_config(config, :url_filters, :respect_nofollow)
+    class Extractor
+      def initialize(config)
+        @config = config
       end
 
       def extract(page, base_url)
@@ -36,22 +36,23 @@ module Kudzu
       end
 
       class FromHTML < Extractor
-        def initialize(config = {})
+        def initialize(config)
           super
           @content_type_parser = Kudzu::Util::ContentTypeParser.new
         end
 
         def extract(page)
-          config = find_filter_config(@config[:url_filters], page.url)
-
           doc = Nokogiri::HTML(page.decoded_body)
           return [] if nofollow?(doc)
 
-          if config[:allow_element]
-            doc = doc.search(*Array(config[:allow_element]))
-          end
-          if config[:deny_element]
-            doc.search(*Array(config[:deny_element])).remove
+          filters = @config.find_filters(page.url)
+          filters.each do |filter|
+            if filter.allow_element
+              doc = doc.search(*Array(filter.allow_element))
+            end
+            if filter.deny_element
+              doc.search(*Array(filter.deny_element)).remove
+            end
           end
 
           hrefs = from_html(doc) + from_html_in_meta(doc)
@@ -61,7 +62,7 @@ module Kudzu
         private
 
         def nofollow?(doc)
-          return false unless @config[:respect_nofollow]
+          return false unless @config.respect_nofollow
           nodes = doc.xpath('//meta[@name]')
           nodes.any? { |node| node[:name] =~ /^robots$/i && node[:content] =~ /nofollow/i }
         end
@@ -69,7 +70,7 @@ module Kudzu
         def from_html(doc)
           nodes = doc.xpath('.//*[@href or @src]').to_a
 
-          if @config[:respect_nofollow]
+          if @config.respect_nofollow
             nodes.reject! { |url| url[:rel] =~ /nofollow/i }
           end
 

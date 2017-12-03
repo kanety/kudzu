@@ -3,7 +3,7 @@ require 'http-cookie'
 
 module Kudzu
   class Agent
-    class Fetcher < Kudzu::Configurable
+    class Fetcher
       class Response
         attr_accessor :url, :status, :header, :body, :time, :redirected
   
@@ -18,10 +18,10 @@ module Kudzu
 
       attr_reader :pool
 
-      def initialize(config = {}, robots = nil)
-        @config = select_config(config, :user_agent, :open_timeout, :read_timeout, :max_redirect, :handle_cookie)
-        @pool = Util::ConnectionPool.new(config[:max_connection] || 100)
-        @sleeper = Kudzu::Agent::Sleeper.new(config, robots)
+      def initialize(config, robots = nil)
+        @config = config
+        @pool = Util::ConnectionPool.new(@config.max_connection || 100)
+        @sleeper = Kudzu::Agent::Sleeper.new(@config, robots)
         @jar = HTTP::CookieJar.new
       end
 
@@ -30,14 +30,14 @@ module Kudzu
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
         request = build_request(uri, request_header)
 
-        append_cookie(url, request) if @config[:handle_cookie]
+        append_cookie(url, request) if @config.handle_cookie
 
         @sleeper.delay(url)
 
         response = nil
         response_time = Benchmark.realtime { response = http.request(request) }
 
-        parse_cookie(url, response) if @config[:handle_cookie]
+        parse_cookie(url, response) if @config.handle_cookie
 
         if redirection?(response.code) && response['location'] && redirect > 0
           fetch(uri.join(response['location']).to_s, request_header: request_header, redirect: redirect - 1)
@@ -51,7 +51,7 @@ module Kudzu
       private
 
       def max_redirect
-        @config[:max_redirect] || 5
+        @config.max_redirect || 5
       end
 
       def pool_name(uri)
@@ -60,8 +60,8 @@ module Kudzu
 
       def build_http(uri)
         http = Net::HTTP.new(uri.host, uri.port || uri.default_port)
-        http.open_timeout = @config[:open_timeout] if @config[:open_timeout]
-        http.read_timeout = @config[:read_timeout] if @config[:read_timeout]
+        http.open_timeout = @config.open_timeout if @config.open_timeout
+        http.read_timeout = @config.read_timeout if @config.read_timeout
         if uri.scheme == 'https'
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -73,7 +73,7 @@ module Kudzu
         request = Net::HTTP::Get.new(uri.request_uri)
         request.basic_auth uri.user, uri.password if uri.user && uri.password
 
-        request['User-Agent'] = @config[:user_agent]
+        request['User-Agent'] = @config.user_agent
         request_header.each do |key, value|
           request[key] = value
         end

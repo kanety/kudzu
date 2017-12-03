@@ -2,7 +2,7 @@ module Kudzu
   module Adapter
     module Memory
       class Frontier
-        def initialize(uuid, config = {})
+        def initialize(uuid)
           @uuid = uuid
           @monitor = Monitor.new
           @queue = []

@@ -1,8 +1,8 @@
 module Kudzu
   class Agent
     class Robots
-      def initialize(config = {})
-        @user_agent = config[:user_agent]
+      def initialize(config)
+        @user_agent = config.user_agent
         @page_fetcher = Kudzu::Agent::Fetcher.new(config)
         @monitor = Monitor.new
         @txt = {}
