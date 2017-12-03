@@ -195,27 +195,22 @@ module Kudzu
 
     def extract_hrefs(page, base_url)
       hrefs = @url_extractor.extract(page, base_url)
-      hrefs.select do |href|
-        allowed_url?(href[:url], base_url)
+      passed, dropped = @url_filter.filter(hrefs, base_url)
+
+      if @config.respect_robots_txt
+        passed, dropped_by_robots = passed.partition { |href| @robots.allowed?(href[:url]) }
+        dropped += dropped_by_robots
       end
+
+      if @config.log_level == :debug
+        passed.each { |href| @logger.log :debug, "url passed: #{href[:url]}" }
+        dropped.each { |href| @logger.log :debug, "url dropped: #{href[:url]}" }
+      end
+
+      passed
     rescue => e
       @logger.log :warn, "couldn't extract links from #{page.url}", error: e
       []
-    end
-
-    def allowed_url?(url, base_url)
-      if @url_filter.allowed?(url, base_url)
-        if !@config.respect_robots_txt || @robots.allowed?(url)
-          @logger.log :debug, "url passed: #{url}"
-          true
-        else
-          @logger.log :debug, "url dropped by robots: #{url}"
-          false
-        end
-      else
-        @logger.log :debug, "url dropped: #{url}"
-        false
-      end
     end
 
     def allowed_page?(page)

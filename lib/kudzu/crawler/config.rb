@@ -67,11 +67,10 @@ module Kudzu
 
       def find_filters(uri)
         uri = Addressable::URI.parse(uri) if uri.is_a?(String)
-        matches = []
-        filters.select do |host, filters|
-          matches += filters if Kudzu::Common.match?(uri.host, host)
+        filters.inject([]) do |array, (host, filters)|
+          array += filters if Kudzu::Common.match?(uri.host, host)
+          array
         end
-        matches
       end
     end
   end

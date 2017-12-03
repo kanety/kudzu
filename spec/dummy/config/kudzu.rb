@@ -1,6 +1,5 @@
-log_file = STDOUT
-
-log_level = :debug
+log_file = ::Logger.new(STDOUT)
+log_file.level = :debug
 
 max_connection = 0
 

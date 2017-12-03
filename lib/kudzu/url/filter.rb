@@ -6,17 +6,18 @@ module Kudzu
         @matcher = Kudzu::Util::Matcher.new
       end
 
-      def filter(urls, base_url)
-        filters = @config.find_filters(base_url)
+      def filter(hrefs, base_url)
+        base_uri = Addressable::URI.parse(base_url)
+        filters = @config.find_filters(base_uri)
 
-        urls.partition do |url|
-          allowed?(url, base_url, filters: filters)
+        hrefs.partition do |href|
+          allowed?(href[:url], base_uri, filters: filters)
         end
       end
 
-      def allowed?(url, base_url, filters: nil)
+      def allowed?(url, base_uri, filters: nil)
         uri = Addressable::URI.parse(url)
-        base_uri = Addressable::URI.parse(base_url)
+        base_uri = Addressable::URI.parse(base_uri) if base_uri.is_a?(String)
         filters ||= @config.find_filters(base_uri)
 
         filters.all? do |filter|
