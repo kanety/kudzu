@@ -1,7 +1,7 @@
 require 'nokogiri'
 
 module Kudzu
-  class Crawler
+  class Agent
     class TitleParser
       def parse(page)
         doc = Nokogiri::HTML(page.decoded_body)

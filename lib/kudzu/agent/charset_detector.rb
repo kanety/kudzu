@@ -2,7 +2,7 @@ require 'nokogiri'
 require 'charlock_holmes'
 
 module Kudzu
-  class Crawler
+  class Agent
     class CharsetDetector
       CORRECTION = {
         'utf_8' => 'utf-8',

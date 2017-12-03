@@ -4,9 +4,11 @@ require_relative 'common'
 require_relative 'configurable'
 require_relative 'logger'
 require_relative 'adapter/memory'
-require_relative 'crawler/all'
-require_relative 'revisit/all'
 require_relative 'util/all'
+require_relative 'crawler/all'
+require_relative 'agent/all'
+require_relative 'url/all'
+require_relative 'revisit/all'
 
 module Kudzu
   class Crawler
@@ -23,22 +25,21 @@ module Kudzu
     end
 
     def prepare(&block)
-      @callback = Callback.new
-      block.call(@callback) if block
-
       @logger = Kudzu::Logger.new(@config[:log_file], @config[:log_level])
+      @callback = Kudzu::Crawler::Callback.new(&block)
 
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
       @repository = Kudzu.adapter::Repository.new(@config)
 
-      @robots = Robots.new(@config)
-      @page_fetcher = PageFetcher.new(@config, @robots)
-      @page_filter = PageFilter.new(@config)
-      @url_extractor = UrlExtractor.new(@config)
-      @url_filter = UrlFilter.new(@config, @robots)
-      @charset_detector = CharsetDetector.new
-      @mime_type_detector = MimeTypeDetector.new
-      @title_parser = TitleParser.new
+      @robots = Kudzu::Agent::Robots.new(@config)
+      @page_fetcher = Kudzu::Agent::Fetcher.new(@config, @robots)
+      @page_filter = Kudzu::Agent::Filter.new(@config)
+      @charset_detector = Kudzu::Agent::CharsetDetector.new
+      @mime_type_detector = Kudzu::Agent::MimeTypeDetector.new
+      @title_parser = Kudzu::Agent::TitleParser.new
+
+      @url_extractor = Kudzu::Url::Extractor.new(@config)
+      @url_filter = Kudzu::Url::Filter.new(@config)
 
       @revisit_scheduler = Revisit::Scheduler.new(@config)
     end
@@ -198,17 +199,26 @@ module Kudzu
     def extract_hrefs(page, base_url)
       hrefs = @url_extractor.extract(page, base_url)
       hrefs.select do |href|
-        if @url_filter.allowed?(href[:url], base_url)
-          @logger.log :debug, "link passed: #{href[:url]}"
-          true
-        else
-          @logger.log :debug, "link dropped: #{href[:url]}"
-          false
-        end
+        allowed_url?(href[:url], base_url)
       end
     rescue => e
       @logger.log :warn, "couldn't extract links from #{page.url}", error: e
       []
+    end
+
+    def allowed_url?(url, base_url)
+      if @url_filter.allowed?(url, base_url)
+        if !@config[:respect_robots_txt] || @robots.allowed?(url)
+          @logger.log :debug, "url passed: #{url}"
+          true
+        else
+          @logger.log :debug, "url dropped by robots: #{url}"
+          false
+        end
+      else
+        @logger.log :debug, "url dropped: #{url}"
+        false
+      end
     end
 
     def allowed_page?(page)

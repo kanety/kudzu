@@ -1,11 +1,8 @@
-require 'kudzu/util/matcher'
-
 module Kudzu
-  class Crawler
-    class UrlFilter < Kudzu::Configurable
-      def initialize(config = {}, robots = nil)
-        @config = select_config(config, :user_agent, :respect_robots_txt, :url_filters)
-        @robots = robots
+  class Url
+    class Filter < Kudzu::Configurable
+      def initialize(config = {})
+        @config = select_config(config, :url_filters)
         @matcher = Kudzu::Util::Matcher.new
       end
 
@@ -27,8 +24,7 @@ module Kudzu
           allowed_url?(uri, config) &&
           allowed_host?(uri, config) &&
           allowed_path?(uri, config) &&
-          allowed_ext?(uri, config) &&
-          allowed_by_robots?(uri, config)
+          allowed_ext?(uri, config)
       end
 
       private
@@ -65,11 +61,6 @@ module Kudzu
         ext = uri.extname.to_s.sub(/^\./, '')
         return true if ext.empty?
         @matcher.match?(ext, allows: config[:allow_ext], denies: config[:deny_ext])
-      end
-
-      def allowed_by_robots?(uri, config)
-        return true if !@config[:respect_robots_txt] || @robots.nil?
-        @robots.allowed?(uri)
       end
     end
   end

@@ -1,9 +1,8 @@
 require 'nokogiri'
-require 'kudzu/util/matcher'
 
 module Kudzu
-  class Crawler
-    class PageFilter < Kudzu::Configurable
+  class Agent
+    class Filter < Kudzu::Configurable
       def initialize(config = {})
         @config = select_config(config, :page_filters, :respect_noindex)
         @matcher = Kudzu::Util::Matcher.new

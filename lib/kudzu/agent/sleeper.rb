@@ -1,5 +1,5 @@
 module Kudzu
-  class Crawler
+  class Agent
     class Sleeper < Kudzu::Configurable
       def initialize(config = {}, robots = nil)
         @config = select_config(config, :delay, :respect_robots_txt)

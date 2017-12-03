@@ -1,11 +1,9 @@
-require_relative 'page_fetcher'
-
 module Kudzu
-  class Crawler
+  class Agent
     class Robots
       def initialize(config = {})
         @user_agent = config[:user_agent]
-        @page_fetcher = Kudzu::Crawler::PageFetcher.new(config)
+        @page_fetcher = Kudzu::Agent::Fetcher.new(config)
         @monitor = Monitor.new
         @txt = {}
       end

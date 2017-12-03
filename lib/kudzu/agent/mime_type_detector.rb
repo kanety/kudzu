@@ -1,7 +1,7 @@
 require 'shared-mime-info'
 
 module Kudzu
-  class Crawler
+  class Agent
     class MimeTypeDetector
       DEFALUT_MIME_TYPE = 'application/octet-stream'
 

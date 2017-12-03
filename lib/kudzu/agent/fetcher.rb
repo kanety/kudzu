@@ -1,11 +1,9 @@
 require 'net/http'
 require 'http-cookie'
-require 'kudzu/util/connection_pool'
-require 'kudzu/crawler/sleeper'
 
 module Kudzu
-  class Crawler
-    class PageFetcher < Kudzu::Configurable
+  class Agent
+    class Fetcher < Kudzu::Configurable
       class Response
         attr_accessor :url, :status, :header, :body, :time, :redirected
   
@@ -23,7 +21,7 @@ module Kudzu
       def initialize(config = {}, robots = nil)
         @config = select_config(config, :user_agent, :open_timeout, :read_timeout, :max_redirect, :handle_cookie)
         @pool = Util::ConnectionPool.new(config[:max_connection] || 100)
-        @sleeper = Kudzu::Crawler::Sleeper.new(config, robots)
+        @sleeper = Kudzu::Agent::Sleeper.new(config, robots)
         @jar = HTTP::CookieJar.new
       end
 

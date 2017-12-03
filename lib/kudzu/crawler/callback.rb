@@ -1,6 +1,6 @@
 module Kudzu
   class Crawler
-    class Callback < Kudzu::Configurable
+    class Callback
       CALLBACKS = [:on_success,      # 2xx
                    :on_redirection,  # 3xx
                    :on_client_error, # 4xx
@@ -15,8 +15,9 @@ module Kudzu
                    :after_enqueue,
                    ]
 
-      def initialize
+      def initialize(&block)
         @callback = {}
+        block.call(self) if block
       end
 
       CALLBACKS.each do |key|

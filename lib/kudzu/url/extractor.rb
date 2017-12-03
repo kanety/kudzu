@@ -1,8 +1,8 @@
 require 'nokogiri'
 
 module Kudzu
-  class Crawler
-    class UrlExtractor < Kudzu::Configurable
+  class Url
+    class Extractor < Kudzu::Configurable
       def initialize(config = {})
         @config = select_config(config, :url_filters, :respect_nofollow)
       end
@@ -21,6 +21,8 @@ module Kudzu
         end
       end
 
+      private
+
       def normalize(url, base_url)
         uri = Addressable::URI.parse(base_url.to_s).join(url.to_s).normalize
         uri.path = '/' unless uri.path
@@ -33,7 +35,7 @@ module Kudzu
         end
       end
 
-      class FromHTML < UrlExtractor
+      class FromHTML < Extractor
         def initialize(config = {})
           super
           @content_type_parser = Kudzu::Util::ContentTypeParser.new
@@ -92,7 +94,7 @@ module Kudzu
         end
       end
 
-      class FromXML < UrlExtractor
+      class FromXML < Extractor
         def extract(page)
           doc = Nokogiri::XML(page.decoded_body)
           doc.remove_namespaces!
