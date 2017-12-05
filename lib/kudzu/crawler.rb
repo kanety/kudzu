@@ -11,7 +11,7 @@ require_relative 'revisit/all'
 
 module Kudzu
   class Crawler
-    attr_reader :uuid, :dsl
+    attr_reader :uuid, :config
     attr_reader :frontier, :repository
 
     def initialize(options = {}, &block)
