@@ -59,16 +59,20 @@ module Kudzu
     def add_filter(base_url = nil, config = {}, &block)
       base_uri = Addressable::URI.parse(base_url || '*')
       host = base_uri.host.presence || '*'
+      path = base_uri.path.presence || '*'
       filters[host] ||= []
-      filters[host] << Filter.new(config, &block)
+      filters[host] << Filter.new(path, config, &block)
     end
 
-    def find_filters(uri)
+    def find_filter(uri)
       uri = Addressable::URI.parse(uri) if uri.is_a?(String)
-      filters.inject([]) do |array, (host, filters)|
-        array += filters if Kudzu::Common.match?(uri.host, host)
-        array
+      filters.each do |host, filters|
+        next unless Kudzu::Common.match?(uri.host, host)
+        filters.each do |filter|
+          return filter if Kudzu::Common.match?(uri.path, filter.path)
+        end
       end
+      nil
     end
   end
 end

@@ -9,11 +9,10 @@ module Kudzu
       end
 
       def allowed?(page)
-        filters = @config.find_filters(page.url)
+        filter = @config.find_filter(page.url)
+        return true unless filter
 
-        filters.all? { |filter|
-          allowed_mime_type?(page.mime_type, filter) && allowed_size?(page.size, filter)
-        } && allowed_index?(page)
+        allowed_mime_type?(page.mime_type, filter) && allowed_size?(page.size, filter) && allowed_index?(page)
       end
 
       private

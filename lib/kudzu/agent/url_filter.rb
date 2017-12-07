@@ -8,26 +8,25 @@ module Kudzu
 
       def filter(hrefs, base_url)
         base_uri = Addressable::URI.parse(base_url)
-        filters = @config.find_filters(base_uri)
+        filter = @config.find_filter(base_uri)
 
         hrefs.partition do |href|
-          allowed?(href[:url], base_uri, filters: filters)
+          allowed?(href[:url], base_uri, filter: filter)
         end
       end
 
-      def allowed?(url, base_uri, filters: nil)
+      def allowed?(url, base_uri, filter: nil)
         uri = Addressable::URI.parse(url)
         base_uri = Addressable::URI.parse(base_uri) if base_uri.is_a?(String)
-        filters ||= @config.find_filters(base_uri)
+        filter ||= @config.find_filter(base_uri)
+        return true unless filter
 
-        filters.all? do |filter|
-          focused_host?(uri, base_uri, filter) &&
-            focused_descendants?(uri, base_uri, filter) &&
-            allowed_url?(uri, filter) &&
-            allowed_host?(uri, filter) &&
-            allowed_path?(uri, filter) &&
-            allowed_ext?(uri, filter)
-        end
+        focused_host?(uri, base_uri, filter) &&
+          focused_descendants?(uri, base_uri, filter) &&
+          allowed_url?(uri, filter) &&
+          allowed_host?(uri, filter) &&
+          allowed_path?(uri, filter) &&
+          allowed_ext?(uri, filter)
       end
 
       private

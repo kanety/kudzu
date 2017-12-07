@@ -10,6 +10,7 @@ module Kudzu
       DEFAULT_CONFIG = { focus_host: false,
                          focus_descendants: false }
 
+      attr_accessor :path
       attr_accessor *SIMPLE_CONFIGS
 
       class Delegator
@@ -24,7 +25,8 @@ module Kudzu
         end
       end
 
-      def initialize(config = {}, &block)
+      def initialize(path, config = {}, &block)
+        @path = path
         DEFAULT_CONFIG.merge(config).each do |key, value|
           send("#{key}=", value)
         end

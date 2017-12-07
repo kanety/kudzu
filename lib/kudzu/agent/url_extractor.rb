@@ -45,8 +45,7 @@ module Kudzu
           doc = Nokogiri::HTML(page.decoded_body)
           return [] if nofollow?(doc)
 
-          filters = @config.find_filters(page.url)
-          filters.each do |filter|
+          if (filter = @config.find_filter(page.url))
             if filter.allow_element
               doc = doc.search(*Array(filter.allow_element))
             end
