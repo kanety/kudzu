@@ -15,7 +15,6 @@ module Kudzu
 
         sleep_sec = sleep_second(uri, delay_sec)
         sleep sleep_sec if sleep_sec > 0
-        update_last_accessed(uri)
       end
 
       private
@@ -30,17 +29,14 @@ module Kudzu
 
       def sleep_second(uri, delay_sec)
         @monitor.synchronize do
-          if @last_accessed[uri.host]
-            (@last_accessed[uri.host] + delay_sec) - Time.now.to_f
-          else
-            0
-          end
-        end
-      end
-
-      def update_last_accessed(uri)
-        @monitor.synchronize do
-          @last_accessed[uri.host] = Time.now.to_f
+          now = Time.now.to_f
+          value = if @last_accessed[uri.host]
+                    (@last_accessed[uri.host] + delay_sec) - now
+                  else
+                    0
+                  end
+          @last_accessed[uri.host] = now + value
+          value
         end
       end
     end
