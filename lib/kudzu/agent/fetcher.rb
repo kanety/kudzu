@@ -25,10 +25,10 @@ module Kudzu
         @jar = HTTP::CookieJar.new
       end
 
-      def fetch(url, request_header: {}, redirect: max_redirect)
+      def fetch(url, request_header: {}, redirect: max_redirect, method: :get)
         uri = Addressable::URI.parse(url)
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
-        request = build_request(uri, request_header)
+        request = build_request(uri, request_header: request_header, method: method)
 
         append_cookie(url, request) if @config.handle_cookie
 
@@ -69,8 +69,8 @@ module Kudzu
         http.start
       end
 
-      def build_request(uri, request_header)
-        request = Net::HTTP::Get.new(uri.request_uri)
+      def build_request(uri, request_header:, method:)
+        request = request_klass_for(method).new(uri.request_uri)
         request.basic_auth uri.user, uri.password if uri.user && uri.password
 
         request['User-Agent'] = @config.user_agent
@@ -78,6 +78,10 @@ module Kudzu
           request[key] = value
         end
         request
+      end
+
+      def request_klass_for(method)
+        Object.const_get("Net::HTTP::#{method.capitalize}")
       end
 
       def build_response(url, response, response_time)
