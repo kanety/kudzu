@@ -20,7 +20,7 @@ module Kudzu
 
       def initialize(config, robots = nil)
         @config = config
-        @pool = Util::ConnectionPool.new(@config.max_connection || 100)
+        @pool = Kudzu::Util::ConnectionPool.new(@config.max_connection || 100)
         @sleeper = Kudzu::Agent::Sleeper.new(@config, robots)
         @jar = HTTP::CookieJar.new
       end

@@ -66,7 +66,7 @@ module Kudzu
     end
 
     def multi_thread(thread_num)
-      @thread_pool = Util::ThreadPool.new(thread_num)
+      @thread_pool = Kudzu::Util::ThreadPool.new(thread_num)
 
       @thread_pool.start do |queue|
         limit_num = [thread_num - queue.size, 0].max
