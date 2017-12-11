@@ -8,7 +8,7 @@ module Kudzu
         @last_accessed = {}
       end
 
-      def delay(url)
+      def politeness_delay(url)
         uri = Addressable::URI.parse(url)
         delay_sec = delay_second(uri)
         return unless delay_sec
@@ -22,8 +22,8 @@ module Kudzu
       def delay_second(uri)
         if @config.respect_robots_txt && @robots && (crawl_delay = @robots.crawl_delay(uri))
           crawl_delay.to_f
-        elsif @config.delay
-          @config.delay.to_f
+        elsif @config.politeness_delay
+          @config.politeness_delay.to_f
         end
       end
 

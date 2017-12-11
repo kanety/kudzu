@@ -32,7 +32,7 @@ module Kudzu
 
         append_cookie(url, request) if @config.handle_cookie
 
-        @sleeper.delay(url)
+        @sleeper.politeness_delay(url)
 
         response = nil
         response_time = Benchmark.realtime { response = http.request(request) }
