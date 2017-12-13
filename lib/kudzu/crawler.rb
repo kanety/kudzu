@@ -147,8 +147,8 @@ module Kudzu
       page.body = response.body
       page.size = response.body.size
       page.mime_type = detect_mime_type(page)
-      page.charset = detect_charset(page) if page.text?
-      page.title = parse_title(page) if page.html?
+      page.charset = detect_charset(page)
+      page.title = parse_title(page)
       page.redirect_from = link.url if response.redirected?
       page.revised_at = Time.now if page.digest != digest
       page.digest = digest
@@ -174,14 +174,22 @@ module Kudzu
     end
 
     def detect_charset(page)
-      @charset_detector.detect(page)
+      if page.text?
+        @charset_detector.detect(page)
+      else
+        nil
+      end
     rescue => e
       @logger.log :warn, "couldn't detect charset for #{page.url}", error: e
       nil
     end
 
     def parse_title(page)
-      @title_parser.parse(page)
+      if page.html?
+        @title_parser.parse(page)
+      else
+        Addressable::URI.parse(page.url).basename
+      end
     rescue => e
       @logger.log :warn, "couldn't parse title for #{page.url}", error: e
       nil
