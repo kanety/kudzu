@@ -221,7 +221,6 @@ module Kudzu
 
     def allowed_page?(page)
       if @page_filter.allowed?(page) &&
-         !@repository.exist_same_content?(page) &&
          (!page.redirect_from || @url_filter.allowed?(page.url, page.redirect_from)) 
         @logger.log :info, "page passed: #{page.url}"
         true

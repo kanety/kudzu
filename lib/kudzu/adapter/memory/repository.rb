@@ -25,10 +25,6 @@ module Kudzu
         def delete(page)
           @page.delete(page.url)
         end
-
-        def exist_same_content?(page)
-          !@page.key?(page.url) && @digest.key?(page.digest)
-        end
       end
     end
   end
