@@ -4,24 +4,16 @@ A simple web crawler for ruby.
 
 ## Features
 
-* Single-thread mode and multi-thread mode.
-* HTTP connection pooling.
-* Adaptable web page store.
-* Restrict outgoing links by url-based patterns.
-* Detect charset for text pages.
+* Run single-thread or multi-thread.
+* Pool HTTP connection.
+* Restrict links by url-based patterns.
 * Respect robots.txt.
-* Schedule re-visit interval using modification frequency.
+* Store page contents via adapter.
 
 ## Dependencies
 
 * ruby 2.3+
 * libicu
-
-## Page store
-
-This gem supports only in-memory crawling by default. Use following adapter to store pages persistently:
-
-* [kudzu-adapter-active_record](https://github.com/kanety/kudzu-adapter-active_record)
 
 ## Installation
 
@@ -53,6 +45,12 @@ crawler.run('http://example.com/') do
   end
 end
 ```
+
+## Adapters
+
+This gem supports only in-memory crawling by default. Use following adapter to save page contents persistently:
+
+* [kudzu-adapter-active_record](https://github.com/kanety/kudzu-adapter-active_record)
 
 ## Contributing
 
