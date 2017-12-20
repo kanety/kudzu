@@ -5,8 +5,6 @@ max_connection 0
 
 default_request_header key: 'value'
 
-save_content false
-
 add_filter do
   focus_host true
   focus_descendants true
