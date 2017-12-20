@@ -78,14 +78,18 @@ module Kudzu
         end
 
         def decoded_body
-          @decoded_body ||= decode_body
+          @decoded_body ||= decode_body(body)
         end
 
         private
 
-        def decode_body
-          if text? && find_encoding
-            body.force_encoding(charset).encode('utf-8', undef: :replace, invalid: :replace)
+        def decode_body(body)
+          if text?
+            if find_encoding
+              body.force_encoding(charset).encode('utf-8', invalid: :replace, undef: :replace)
+            else
+              body.encode('utf-8', invalid: :replace, undef: :replace)
+            end
           else
             body
           end
