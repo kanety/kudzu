@@ -8,7 +8,7 @@ module Kudzu
                         :max_connection, :max_redirect, :max_depth, :default_request_header,
                         :politeness_delay, :handle_cookie,
                         :respect_robots_txt, :respect_nofollow, :respect_noindex,
-                        :save_content, :log_file, :log_level,
+                        :log_file, :log_level,
                         :revisit_mode, :revisit_min_interval, :revisit_max_interval, :revisit_default_interval,
                         :filters]
     DEFAULT_CONFIG   = { user_agent: "Kudzu/#{Kudzu::VERSION}",
@@ -22,7 +22,6 @@ module Kudzu
                          respect_robots_txt: true,
                          respect_nofollow: true,
                          respect_noindex: true,
-                         save_content: true,
                          revisit_mode: false,
                          revisit_min_interval: 1,
                          revisit_max_interval: 10,

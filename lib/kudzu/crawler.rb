@@ -24,7 +24,7 @@ module Kudzu
       @callback = Kudzu::Callback.new(&block)
 
       @frontier = Kudzu.adapter::Frontier.new(@uuid)
-      @repository = Kudzu.adapter::Repository.new(@config)
+      @repository = Kudzu.adapter::Repository.new
 
       @robots = Kudzu::Agent::Robots.new(@config)
       @page_fetcher = Kudzu::Agent::Fetcher.new(@config, @robots)

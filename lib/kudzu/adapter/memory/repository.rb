@@ -4,8 +4,7 @@ module Kudzu
       class Repository
         attr_reader :page
 
-        def initialize(config)
-          @config = config
+        def initialize
           @page = {}
           @digest = {}
         end
@@ -15,9 +14,6 @@ module Kudzu
         end
 
         def register(page)
-          unless @config.save_content
-            page.body = nil
-          end
           @page[page.url] = page
           @digest[page.digest] = true
         end
