@@ -6,12 +6,14 @@ module Kudzu
                  :on_server_error, # 5xx
                  :on_filter,       # 2xx, filtered
                  :on_failure,      # Exception
+                 :before_enqueue, 
+                 :after_enqueue,
+                 :before_fetch, 
+                 :after_fetch,
                  :before_register,
                  :after_register,
                  :before_delete,
                  :after_delete,
-                 :before_enqueue, 
-                 :after_enqueue,
                  ]
 
     def initialize(&block)

@@ -83,7 +83,7 @@ module Kudzu
 
     def visit_link(link)
       page = @repository.find_by_url(link.url)
-      response = fetch_link(link, build_request_header(page))
+      response = fetch_link(page, link, build_request_header(page))
       return unless response
 
       page = @repository.find_by_url(response.url) if response.redirected?
@@ -129,8 +129,11 @@ module Kudzu
       header
     end
 
-    def fetch_link(link, request_header)
-      response = @page_fetcher.fetch(link.url, request_header: request_header)
+    def fetch_link(page, link, request_header)
+      response = nil
+      @callback.around(:fetch, page, link, request_header) do
+        response = @page_fetcher.fetch(link.url, request_header: request_header)
+      end
       @logger.log :info, "page fetched: #{response.status} #{response.url}"
       response
     rescue Exception => e

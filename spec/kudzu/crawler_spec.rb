@@ -39,6 +39,12 @@ describe Kudzu::Crawler do
         after_enqueue do |links|
           puts "after_enqueue: #{links.size}"
         end
+        before_fetch do |page, link, request_header|
+          puts "before_fetch: #{link.url}"
+        end
+        after_fetch do |page, link, request_header|
+          puts "after_fetch: #{link.url}"
+        end
       end
       expect(crawler.repository.page.size > 0).to be_truthy
     end
