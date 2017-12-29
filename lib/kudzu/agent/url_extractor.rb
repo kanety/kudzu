@@ -24,8 +24,11 @@ module Kudzu
       private
 
       def normalize(url, base_url)
+        url = sanitize(url)
+
         uri = Addressable::URI.parse(base_url.to_s).join(url.to_s).normalize
         uri.path = '/' unless uri.path
+        uri.path = uri.path.gsub(%r|/{2,}|, '/')
         uri.fragment = nil
 
         if uri.scheme.in?(%w(http https))
@@ -33,6 +36,10 @@ module Kudzu
         else
           nil
         end
+      end
+
+      def sanitize(url)
+        url.gsub(/^( |　|%20)+/, '')
       end
 
       class FromHTML < UrlExtractor

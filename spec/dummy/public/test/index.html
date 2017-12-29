@@ -60,16 +60,17 @@
     <li><a href="/gone">gone</a></li>
     <li><a href="/internal_server_error">internal_server_error</a></li>
   </ul>
-  <ul class="https">
-    <li><a href="https://localhost:9292/test/index.html">https://localhost:9292/test/index.html</a></li>
-  </ul>
   <ul class="other-protocol">
     <li><a href="javascript:void(0)">javascript</a></li>
     <li><a href="tel:***-****">tel</a></li>
     <li><a href="mailto:**@**">mailto</a></li>
     <li><a href="unknown:***">unknown</a></li>
   </ul>
-  <ul class="invalid-url">
+  <ul class="malformed-url">
+    <li><a href=" %20%20http://localhost:9292/test/index.html"> %20%20http://localhost:9292/test/index.html</a></li>
+    <li><a href="http://localhost:9292/test///index.html"> http://localhost:9292/test///index.html</a></li>
+  </ul>
+  <ul class="non-exsistent-url">
     <li><a href="http://localhost:9293/test/index.html">http://localhost:9293/test/index.html</a></li>
   </ul>
 </body>
