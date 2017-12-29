@@ -9,7 +9,6 @@ module Kudzu
                         :politeness_delay, :handle_cookie,
                         :respect_robots_txt, :respect_nofollow, :respect_noindex,
                         :log_file, :log_level,
-                        :revisit_mode, :revisit_min_interval, :revisit_max_interval, :revisit_default_interval,
                         :filters]
     DEFAULT_CONFIG   = { user_agent: "Kudzu/#{Kudzu::VERSION}",
                          open_timeout: 10,
@@ -21,11 +20,7 @@ module Kudzu
                          handle_cookie: true,
                          respect_robots_txt: true,
                          respect_nofollow: true,
-                         respect_noindex: true,
-                         revisit_mode: false,
-                         revisit_min_interval: 1,
-                         revisit_max_interval: 10,
-                         revisit_default_interval: 5 }
+                         respect_noindex: true }
 
     attr_accessor *SIMPLE_CONFIGS
 

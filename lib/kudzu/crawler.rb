@@ -7,7 +7,6 @@ require_relative 'logger'
 require_relative 'adapter/memory'
 require_relative 'util/all'
 require_relative 'agent/all'
-require_relative 'revisit/all'
 
 module Kudzu
   class Crawler
@@ -35,8 +34,6 @@ module Kudzu
 
       @url_extractor = Kudzu::Agent::UrlExtractor.new(@config)
       @url_filter = Kudzu::Agent::UrlFilter.new(@config)
-
-      @revisit_scheduler = Kudzu::Revisit::Scheduler.new(@config)
     end
 
     def run(seed_url, &block)
@@ -83,7 +80,7 @@ module Kudzu
 
     def visit_link(link)
       page = @repository.find_by_url(link.url)
-      response = fetch_link(page, link, build_request_header(page))
+      response = fetch_link(page, link, @config.default_request_header.to_h)
       return unless response
 
       page = @repository.find_by_url(response.url) if response.redirected?
@@ -95,7 +92,6 @@ module Kudzu
       if page.status_success?
         handle_success(page, link, response)
       elsif page.status_not_modified?
-        @revisit_scheduler.schedule(page, modified: false)
         register_page(page)
       elsif page.status_not_found? || page.status_gone?
         delete_page(page)
@@ -120,15 +116,6 @@ module Kudzu
       end
     end
 
-    def build_request_header(page)
-      header = @config.default_request_header.to_h
-      if @config.revisit_mode
-        header['If-Modified-Since'] = page.last_modified.httpdate if page.last_modified
-        header['If-None-Match'] = page.etag if page.etag
-      end
-      header
-    end
-
     def fetch_link(page, link, request_header)
       response = nil
       @callback.around(:fetch, page, link, request_header) do
@@ -144,7 +131,6 @@ module Kudzu
 
     def handle_success(page, link, response)
       digest = Digest::MD5.hexdigest(response.body)
-      @revisit_scheduler.schedule(page, modified: page.digest != digest)
 
       page.response_header = response.header
       page.body = response.body
