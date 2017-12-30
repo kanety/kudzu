@@ -1,5 +1,3 @@
-require 'nokogiri'
-
 module Kudzu
   class Agent
     class UrlExtractor
@@ -7,26 +5,30 @@ module Kudzu
         @config = config
       end
 
-      def extract(page, base_url)
-        hrefs = if page.html?
-                  FromHTML.new(@config).extract(page)
-                elsif page.xml?
-                  FromXML.new(@config).extract(page)
-                else
-                  []
-                end
+      def extract(response)
+        refs = if response.html?
+                 ForHTML.new(@config).extract(response)
+               elsif response.xml?
+                 ForXML.new(@config).extract(response)
+               else
+                 []
+               end
 
-        hrefs.select do |href|
-          href[:url] = normalize(href[:url], base_url)
+        refs.each do |ref|
+          ref.url = sanitize(ref.url)
+          ref.url = normalize(ref.url, response.url)
         end
+        refs.reject { |ref| ref.url.nil? }.uniq
       end
 
       private
 
-      def normalize(url, base_url)
-        url = sanitize(url)
+      def sanitize(url)
+        url.gsub(/^( |　|%20)+/, '')
+      end
 
-        uri = Addressable::URI.parse(base_url.to_s).join(url.to_s).normalize
+      def normalize(url, base_url)
+        uri = Addressable::URI.parse(base_url).join(url).normalize
         uri.path = '/' unless uri.path
         uri.path = uri.path.gsub(%r|/{2,}|, '/')
         uri.fragment = nil
@@ -36,39 +38,37 @@ module Kudzu
         else
           nil
         end
+      rescue => e
+        Kudzu.log :warn, "failed to normalize url: #{url}", error: e
+        nil
       end
 
-      def sanitize(url)
-        url.gsub(/^( |　|%20)+/, '')
-      end
-
-      class FromHTML < UrlExtractor
+      class ForHTML
         def initialize(config)
-          super
-          @content_type_parser = Kudzu::Util::ContentTypeParser.new
+          @config = config
         end
 
-        def extract(page)
-          doc = Nokogiri::HTML(page.decoded_body)
-          return [] if nofollow?(doc)
+        def extract(response)
+          doc = response.parsed_doc
+          return [] if @config.respect_nofollow && nofollow?(doc)
 
-          if (filter = @config.find_filter(page.url))
+          if (filter = @config.find_filter(response.url))
             if filter.allow_element
               doc = doc.search(*Array(filter.allow_element))
             end
             if filter.deny_element
+              doc = doc.dup
               doc.search(*Array(filter.deny_element)).remove
             end
           end
 
-          hrefs = from_html(doc) + from_html_in_meta(doc)
-          hrefs.reject { |href| href[:url].empty? }.uniq
+          refs = from_html(doc) + from_meta(doc)
+          refs.reject { |ref| ref.url.nil? || ref.url.empty? }
         end
 
         private
 
         def nofollow?(doc)
-          return false unless @config.respect_nofollow
           nodes = doc.xpath('//meta[@name]')
           nodes.any? { |node| node[:name] =~ /^robots$/i && node[:content] =~ /nofollow/i }
         end
@@ -80,10 +80,10 @@ module Kudzu
             nodes.reject! { |url| url[:rel] =~ /nofollow/i }
           end
 
-          nodes.map { |node|
-            { url: (node[:href] || node[:src]).to_s.strip,
-              title: node_to_title(node) }
-          }
+          nodes.map do |node|
+            Reference.new(url: (node[:href] || node[:src]).to_s,
+                          title: node_to_title(node))
+          end
         end
 
         def node_to_title(node)
@@ -94,35 +94,42 @@ module Kudzu
           end
         end
 
-        def from_html_in_meta(doc)
+        def from_meta(doc)
           nodes = doc.xpath('.//meta[@http-equiv]').select { |node| node[:'http-equiv'] =~ /^refresh$/i }
-          urls = nodes.map { |node| @content_type_parser.parse(node[:content]).last[:url] }.compact
-          urls.map { |url| { url: url.to_s.strip } }
+          urls = nodes.map { |node| Util::ContentTypeParser.parse(node[:content]).last[:url] }.compact
+          urls.map do |url|
+            Reference.new(url: url.to_s)
+          end
         end
       end
 
-      class FromXML < UrlExtractor
-        def extract(page)
-          doc = Nokogiri::XML(page.decoded_body)
+      class ForXML
+        def initialize(config)
+          @config = config
+        end
+
+        def extract(response)
+          doc = response.parsed_doc.dup
           doc.remove_namespaces!
-          hrefs = from_xml_rss(doc) + from_xml_atom(doc)
-          hrefs.reject { |href| href[:url].empty? }.uniq
+
+          refs = from_rss(doc) + from_atom(doc)
+          refs.reject { |ref| ref.url.nil? || ref.url.empty? }
         end
 
         private
 
-        def from_xml_rss(doc)
-          doc.xpath('rss/channel').map { |node|
-            { url: node.xpath('./item/link').inner_text.strip,
-              title: node.xpath('./item/title').inner_text }
-          }
+        def from_rss(doc)
+          doc.xpath('rss/channel').map do |node|
+            Reference.new(url: node.xpath('./item/link').inner_text,
+                          title: node.xpath('./item/title').inner_text)
+          end
         end
 
-        def from_xml_atom(doc)
-          doc.xpath('feed/entry').map { |node|
-            { url: node.xpath('./link[@href]/@href').to_s.strip,
-              title: node.xpath('./title').inner_text }
-          }
+        def from_atom(doc)
+          doc.xpath('feed/entry').map do |node|
+            Reference.new(url: node.xpath('./link[@href]/@href').to_s,
+                          title: node.xpath('./title').inner_text)
+          end
         end
       end
     end

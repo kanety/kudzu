@@ -1,31 +1,16 @@
-require 'net/http'
-require 'http-cookie'
-
 module Kudzu
   class Agent
     class Fetcher
-      class Response
-        attr_accessor :url, :status, :header, :body, :time, :redirected
-  
-        def initialize(attr = {})
-          attr.each { |k, v| public_send("#{k}=", v) }
-        end
-
-        def redirected?
-          redirected
-        end
-      end
-
       attr_reader :pool
 
       def initialize(config, robots = nil)
         @config = config
-        @pool = Kudzu::Util::ConnectionPool.new(@config.max_connection || 100)
-        @sleeper = Kudzu::Agent::Sleeper.new(@config, robots)
+        @pool = Http::ConnectionPool.new(@config.max_connection || 100)
+        @sleeper = Sleeper.new(@config, robots)
         @jar = HTTP::CookieJar.new
       end
 
-      def fetch(url, request_header: {}, redirect: max_redirect, method: :get)
+      def fetch(url, request_header: {}, method: :get, redirect: max_redirect, redirect_from: nil)
         uri = Addressable::URI.parse(url)
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
         request = build_request(uri, request_header: request_header, method: method)
@@ -40,11 +25,11 @@ module Kudzu
         parse_cookie(url, response) if @config.handle_cookie
 
         if redirection?(response.code) && response['location'] && redirect > 0
-          fetch(uri.join(response['location']).to_s, request_header: request_header, redirect: redirect - 1)
+          fetch(uri.join(response['location']).to_s, request_header: request_header,
+                                                     redirect: redirect - 1,
+                                                     redirect_from: redirect_from || url)
         else
-          res = build_response(url, response, response_time)
-          res.redirected = (redirect != max_redirect)
-          res
+          build_response(url, response, response_time, redirect_from)
         end
       end
 
@@ -84,12 +69,13 @@ module Kudzu
         Object.const_get("Net::HTTP::#{method.capitalize}")
       end
 
-      def build_response(url, response, response_time)
+      def build_response(url, response, response_time, redirect_from)
         Response.new(url: url,
                      status: response.code.to_i,
-                     header: Hash[response.each.to_a],
                      body: response.body.to_s,
-                     time: response_time)
+                     response_header: Hash[response.each.to_a],
+                     response_time: response_time,
+                     redirect_from: redirect_from)
       end
 
       def redirection?(code)

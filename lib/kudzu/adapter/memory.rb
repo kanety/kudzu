@@ -1,4 +1,3 @@
-require_relative 'base/all'
-require_relative 'memory/all'
-
-Kudzu.adapter = Kudzu::Adapter::Memory
+Dir[File.join(__dir__, 'memory/**/*.rb')].each do |file|
+  require_relative file
+end

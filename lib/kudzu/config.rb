@@ -8,7 +8,6 @@ module Kudzu
                         :max_connection, :max_redirect, :max_depth, :default_request_header,
                         :politeness_delay, :handle_cookie,
                         :respect_robots_txt, :respect_nofollow, :respect_noindex,
-                        :log_file, :log_level,
                         :filters]
     DEFAULT_CONFIG   = { user_agent: "Kudzu/#{Kudzu::VERSION}",
                          open_timeout: 10,
@@ -24,29 +23,13 @@ module Kudzu
 
     attr_accessor *SIMPLE_CONFIGS
 
-    class Delegator
-      def initialize(config)
-        @config = config
-      end
-
-      Kudzu::Config::SIMPLE_CONFIGS.each do |key|
-        define_method(key) do |value|
-          @config.send("#{key}=", value)
-        end
-      end
-
-      def add_filter(base_url = nil, config = {}, &block)
-        @config.add_filter(base_url, config, &block)
-      end
-    end
-
     def initialize(config = {}, &block)
       self.filters = {}
       DEFAULT_CONFIG.merge(config).each do |key, value|
         send("#{key}=", value)
       end
       if config_file || block
-        delegator = Kudzu::Config::Delegator.new(self)
+        delegator = Delegator.new(self)
         delegator.instance_eval(File.read(config_file)) if config_file
         delegator.instance_eval(&block) if block
       end
@@ -69,6 +52,22 @@ module Kudzu
         end
       end
       nil
+    end
+
+    class Delegator
+      def initialize(config)
+        @config = config
+      end
+
+      SIMPLE_CONFIGS.each do |key|
+        define_method(key) do |value|
+          @config.send("#{key}=", value)
+        end
+      end
+
+      def add_filter(base_url = nil, config = {}, &block)
+        @config.add_filter(base_url, config, &block)
+      end
     end
   end
 end
