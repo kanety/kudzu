@@ -14,7 +14,10 @@ module Kudzu
 
     def log(level, message, error: nil)
       return unless @logger
-      message += " #{error.class} #{error.message} #{error.backtrace.join("\n")}" if error
+      if error
+        message += " #{error.class} #{error.message}"
+        message += " #{error.backtrace.join("\n")}" if level == :error || level == :fatal
+      end
       @logger.send(level, message)
     end
   end
