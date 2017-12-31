@@ -125,11 +125,11 @@ module Kudzu
       page.digest = response.digest
 
       if @config.max_depth.nil? || link.depth < @config.max_depth.to_i
-        refs = @agent.extract_refs
+        refs = @agent.extract_refs(response)
         enqueue_links(refs_to_links(refs, link.depth + 1)) unless refs.empty?
       end
 
-      if @agent.filter_page?
+      if @agent.filter_response?(response)
         page.filtered = true
         delete_page(page)
       else
