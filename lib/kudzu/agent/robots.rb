@@ -3,7 +3,6 @@ module Kudzu
     class Robots
       def initialize(config)
         @user_agent = config.user_agent
-        @fetcher = Fetcher.new(config)
         @monitor = Monitor.new
         @txt = {}
       end
@@ -49,7 +48,7 @@ module Kudzu
 
       def fetch_and_parse(uri)
         response = fetch(uri)
-        if response && response.status == 200
+        if response && response.code.to_i == 200
           body = response.body.force_encoding('utf-8').encode('utf-8', undef: :replace, invalid: :replace)
           Parser.parse(body)
         else
@@ -62,8 +61,14 @@ module Kudzu
         uri.path = 'robots.txt'
         uri.fragment = uri.query = nil
 
+        http = Net::HTTP.new(uri.host, uri.port || uri.default_port)
+        if uri.scheme == 'https'
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+
         begin
-          @fetcher.fetch(uri.to_s)
+          http.get(uri.to_s)
         rescue => e
           Kudzu.log :error, "failed to fetch robots.txt: #{uri}", error: e
           nil
