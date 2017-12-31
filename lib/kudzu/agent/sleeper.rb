@@ -8,8 +8,8 @@ module Kudzu
         @last_accessed = {}
       end
 
-      def politeness_delay(url)
-        uri = Addressable::URI.parse(url)
+      def politeness_delay(uri)
+        uri = Addressable::URI.parse(uri) if uri.is_a?(String)
         delay_sec = delay_second(uri)
         return unless delay_sec
 
