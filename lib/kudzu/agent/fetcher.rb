@@ -47,6 +47,7 @@ module Kudzu
         http = Net::HTTP.new(uri.host, uri.port || uri.default_port)
         http.open_timeout = @config.open_timeout if @config.open_timeout
         http.read_timeout = @config.read_timeout if @config.read_timeout
+        http.keep_alive_timeout = @config.keep_alive if @config.keep_alive
         if uri.scheme == 'https'
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE

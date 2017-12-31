@@ -4,7 +4,7 @@ require_relative 'config/filter'
 module Kudzu
   class Config
     SIMPLE_CONFIGS   = [:config_file,
-                        :user_agent, :thread_num, :open_timeout, :read_timeout,
+                        :user_agent, :thread_num, :open_timeout, :read_timeout, :keep_alive,
                         :max_connection, :max_redirect, :max_depth, :default_request_header,
                         :politeness_delay, :handle_cookie,
                         :respect_robots_txt, :respect_nofollow, :respect_noindex,
@@ -12,6 +12,7 @@ module Kudzu
     DEFAULT_CONFIG   = { user_agent: "Kudzu/#{Kudzu::VERSION}",
                          open_timeout: 10,
                          read_timeout: 10,
+                         keep_alive: 5,
                          thread_num: 1,
                          max_connection: 10,
                          max_redirect: 3,
