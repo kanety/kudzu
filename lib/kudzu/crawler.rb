@@ -73,11 +73,16 @@ module Kudzu
       page.response_time = response.response_time
       page.fetched_at = Time.now
 
-      if page.status_success?
-        handle_success(page, link, response)
-      elsif page.status_not_modified?
-        register_page(page)
-      elsif page.status_not_found? || page.status_gone?
+      if response.fetched?
+        if page.status_success?
+          handle_success(page, link, response)
+        elsif page.status_not_modified?
+          register_page(page)
+        elsif page.status_not_found? || page.status_gone?
+          delete_page(page)
+        end
+      else
+        page.filtered = true
         delete_page(page)
       end
 
@@ -105,7 +110,11 @@ module Kudzu
       @callback.around(:fetch, link, request_header, response) do
         response = @agent.fetch(link.url, request_header)
       end
-      Kudzu.log :info, "fetched page: #{response.status} #{response.url}"
+      if response.fetched?
+        Kudzu.log :info, "fetched page: #{response.status} #{response.url}"
+      else
+        Kudzu.log :info, "skipped page: #{response.status} #{response.url}"
+      end
       response
     rescue Exception => e
       Kudzu.log :warn, "failed to fetch page: #{link.url}", error: e

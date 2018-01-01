@@ -19,6 +19,20 @@ module Kudzu
         end
       end
 
+      def allowed_response_header?(url, response_header)
+        filter = @config.find_filter(url)
+
+        if response_header['content-type']
+          mime_type = Util::ContentTypeParser.parse(response_header['content-type']).first
+        end
+        if response_header['content-length']
+          size = response_header['content-length'].to_i
+        end
+
+        filter.nil? || (allowed_mime_type?(mime_type, filter) &&
+                        allowed_size?(size, filter))
+      end
+
       private
 
       def allowed_mime_type?(mime_type, filter)
@@ -32,7 +46,7 @@ module Kudzu
       end
 
       def allowed_index?(response)
-        return true unless response.html?
+        return true if response.body.nil? || !response.html?
         return true unless @config.respect_noindex
 
         doc = response.parsed_doc

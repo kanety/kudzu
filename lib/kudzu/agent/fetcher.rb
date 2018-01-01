@@ -7,6 +7,7 @@ module Kudzu
         @config = config
         @pool = Http::ConnectionPool.new(@config.max_connection || 100)
         @sleeper = Sleeper.new(@config, robots)
+        @filterer = PageFilterer.new(@config)
         @jar = HTTP::CookieJar.new
       end
 
@@ -32,21 +33,25 @@ module Kudzu
 
       def send_request(uri, request)
         start_http(uri, request) do |http|
-          http.request(request)
+          http.request(request) do |response|
+            unless @filterer.allowed_response_header?(uri.to_s, response)
+              http.finish
+              break response
+            end
+          end
         end
       end
 
       def start_http(uri, request)
         http = @pool.checkout(pool_name(uri)) { build_http(uri) }
         append_cookie(uri, request) if @config.handle_cookie
-
         @sleeper.politeness_delay(uri)
+
         start = Time.now.to_f
         response = yield http
         response_time = Time.now.to_f - start
 
         parse_cookie(uri, response) if @config.handle_cookie
-
         return response, response_time
       end
 
@@ -74,12 +79,14 @@ module Kudzu
       end
 
       def build_response(url, response, response_time, redirect_from)
+        fetched = response.instance_variable_get("@read")
         Response.new(url: url,
                      status: response.code.to_i,
-                     body: response.body.to_s,
+                     body: fetched ? response.body.to_s : nil,
                      response_header: Hash[response.each.to_a],
                      response_time: response_time,
-                     redirect_from: redirect_from)
+                     redirect_from: redirect_from,
+                     fetched: fetched)
       end
 
       def redirection?(code)

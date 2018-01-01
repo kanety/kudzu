@@ -19,6 +19,7 @@ module Kudzu
 
     def fetch(url, request_header = {})
       response = @fetcher.fetch(url, request_header: request_header)
+      return response unless response.fetched?
 
       response.size = response.body.size
       response.digest = Digest::MD5.hexdigest(response.body)

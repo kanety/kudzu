@@ -12,5 +12,5 @@ add_filter do
 
   allow_mime_type %r|^text/.*$|
   deny_mime_type %r|^text/css$|
-  max_size 1000
+  max_size 5000
 end
