@@ -6,7 +6,6 @@ module Kudzu
 
         def initialize
           @page = {}
-          @digest = {}
         end
 
         def find_by_url(url)
@@ -15,7 +14,6 @@ module Kudzu
 
         def register(page)
           @page[page.url] = page
-          @digest[page.digest] = true
         end
 
         def delete(page)

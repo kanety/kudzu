@@ -4,16 +4,15 @@ require_relative 'config/filter'
 module Kudzu
   class Config
     SIMPLE_CONFIGS   = [:config_file,
-                        :user_agent, :thread_num, :open_timeout, :read_timeout,
+                        :user_agent, :thread_num, :open_timeout, :read_timeout, :keep_alive,
                         :max_connection, :max_redirect, :max_depth, :default_request_header,
                         :politeness_delay, :handle_cookie,
                         :respect_robots_txt, :respect_nofollow, :respect_noindex,
-                        :log_file, :log_level,
-                        :revisit_mode, :revisit_min_interval, :revisit_max_interval, :revisit_default_interval,
                         :filters]
     DEFAULT_CONFIG   = { user_agent: "Kudzu/#{Kudzu::VERSION}",
                          open_timeout: 10,
                          read_timeout: 10,
+                         keep_alive: 5,
                          thread_num: 1,
                          max_connection: 10,
                          max_redirect: 3,
@@ -21,29 +20,9 @@ module Kudzu
                          handle_cookie: true,
                          respect_robots_txt: true,
                          respect_nofollow: true,
-                         respect_noindex: true,
-                         revisit_mode: false,
-                         revisit_min_interval: 1,
-                         revisit_max_interval: 10,
-                         revisit_default_interval: 5 }
+                         respect_noindex: true }
 
     attr_accessor *SIMPLE_CONFIGS
-
-    class Delegator
-      def initialize(config)
-        @config = config
-      end
-
-      Kudzu::Config::SIMPLE_CONFIGS.each do |key|
-        define_method(key) do |value|
-          @config.send("#{key}=", value)
-        end
-      end
-
-      def add_filter(base_url = nil, config = {}, &block)
-        @config.add_filter(base_url, config, &block)
-      end
-    end
 
     def initialize(config = {}, &block)
       self.filters = {}
@@ -51,7 +30,7 @@ module Kudzu
         send("#{key}=", value)
       end
       if config_file || block
-        delegator = Kudzu::Config::Delegator.new(self)
+        delegator = Delegator.new(self)
         delegator.instance_eval(File.read(config_file)) if config_file
         delegator.instance_eval(&block) if block
       end
@@ -74,6 +53,22 @@ module Kudzu
         end
       end
       nil
+    end
+
+    class Delegator
+      def initialize(config)
+        @config = config
+      end
+
+      SIMPLE_CONFIGS.each do |key|
+        define_method(key) do |value|
+          @config.send("#{key}=", value)
+        end
+      end
+
+      def add_filter(base_url = nil, config = {}, &block)
+        @config.add_filter(base_url, config, &block)
+      end
     end
   end
 end

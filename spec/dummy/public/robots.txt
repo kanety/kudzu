@@ -2,7 +2,7 @@
 User-agent: *   # all bots
 Allow: /robots/allow
 Disallow: /robots/disallow
-Crawl-delay: 1
+Crawl-delay: 0
 
 User-agent: Testbot1   # Testbot1 and Testbot2
 User-agent: Testbot2

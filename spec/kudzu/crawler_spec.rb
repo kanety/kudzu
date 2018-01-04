@@ -2,9 +2,14 @@ describe Kudzu::Crawler do
   let(:seed_url) { "http://localhost:9292/test/index.html" }
   let(:config_file) { Rails.root.join('config/kudzu.rb') }
 
+  before {
+    Kudzu.logger = Logger.new(STDOUT)
+    Kudzu.logger.level = :debug
+  }
+
   context 'run' do
     it 'single thread' do
-      crawler = Kudzu::Crawler.new(thread_num: 1, log_file: STDERR, log_level: :debug)
+      crawler = Kudzu::Crawler.new(thread_num: 1)
       crawler.run(seed_url) do
         on_success do |page, link|
           puts "on_success: #{page.status} #{page.url}"
@@ -38,6 +43,12 @@ describe Kudzu::Crawler do
         end
         after_enqueue do |links|
           puts "after_enqueue: #{links.size}"
+        end
+        before_fetch do |link, request_header|
+          puts "before_fetch: #{link.url}"
+        end
+        after_fetch do |link, request_header|
+          puts "after_fetch: #{link.url}"
         end
       end
       expect(crawler.repository.page.size > 0).to be_truthy

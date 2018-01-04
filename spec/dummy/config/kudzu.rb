@@ -1,6 +1,3 @@
-log_file ::Logger.new(STDOUT)
-log_level :debug
-
 max_connection 0
 
 default_request_header key: 'value'
@@ -15,5 +12,5 @@ add_filter do
 
   allow_mime_type %r|^text/.*$|
   deny_mime_type %r|^text/css$|
-  max_size 1000
+  max_size 5000
 end

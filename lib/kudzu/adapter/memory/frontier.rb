@@ -9,7 +9,7 @@ module Kudzu
           @queued = {}
         end
 
-        def enqueue(links, depth: 1)
+        def enqueue(links)
           @monitor.synchronize do
             Array(links).each do |link|
               next if @queued.key?(link.url)

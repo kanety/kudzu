@@ -1,22 +1,28 @@
 module Kudzu
   class Agent
-    class UrlFilter
-      def initialize(config)
+    class UrlFilterer
+      def initialize(config, robots = nil)
         @config = config
-        @matcher = Kudzu::Util::Matcher.new
+        @robots = robots
       end
 
-      def filter(hrefs, base_url)
+      def filter(refs, base_url)
         base_uri = Addressable::URI.parse(base_url)
         filter = @config.find_filter(base_uri)
 
-        hrefs.partition do |href|
-          allowed?(href[:url], base_uri, filter: filter)
+        refs.select do |ref|
+          if allowed?(ref.uri, base_uri, filter: filter)
+            Kudzu.log :debug, "passed url: #{ref.url}"
+            true
+          else
+            Kudzu.log :debug, "dropped url: #{ref.url}"
+            false
+          end
         end
       end
 
-      def allowed?(url, base_uri, filter: nil)
-        uri = Addressable::URI.parse(url)
+      def allowed?(uri, base_uri, filter: nil)
+        uri = Addressable::URI.parse(uri) if uri.is_a?(String)
         base_uri = Addressable::URI.parse(base_uri) if base_uri.is_a?(String)
         filter ||= @config.find_filter(base_uri)
         return true unless filter
@@ -26,7 +32,8 @@ module Kudzu
           allowed_url?(uri, filter) &&
           allowed_host?(uri, filter) &&
           allowed_path?(uri, filter) &&
-          allowed_ext?(uri, filter)
+          allowed_ext?(uri, filter) &&
+          allowed_by_robots?(uri)
       end
 
       private
@@ -44,21 +51,27 @@ module Kudzu
       end
 
       def allowed_url?(uri, filter)
-        @matcher.match?(uri.to_s, allows: filter.allow_url, denies: filter.deny_url)
+        Util::Matcher.match?(uri.to_s, allows: filter.allow_url, denies: filter.deny_url)
       end
 
       def allowed_host?(uri, filter)
-        @matcher.match?(uri.host, allows: filter.allow_host, denies: filter.deny_host)
+        Util::Matcher.match?(uri.host, allows: filter.allow_host, denies: filter.deny_host)
       end
 
       def allowed_path?(uri, filter)
-        @matcher.match?(uri.path, allows: filter.allow_path, denies: filter.deny_path)
+        Util::Matcher.match?(uri.path, allows: filter.allow_path, denies: filter.deny_path)
       end
 
       def allowed_ext?(uri, filter)
         ext = uri.extname.to_s.sub(/^\./, '')
         return true if ext.empty?
-        @matcher.match?(ext, allows: filter.allow_ext, denies: filter.deny_ext)
+        Util::Matcher.match?(ext, allows: filter.allow_ext, denies: filter.deny_ext)
+      end
+
+      def allowed_by_robots?(uri)
+        return true unless @robots
+        return true unless @config.respect_robots_txt
+        @robots.allowed?(uri)
       end
     end
   end
