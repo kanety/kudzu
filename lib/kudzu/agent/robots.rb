@@ -2,7 +2,7 @@ module Kudzu
   class Agent
     class Robots
       def initialize(config)
-        @user_agent = config.user_agent
+        @config = config
         @monitor = Monitor.new
         @txt = {}
       end
@@ -41,7 +41,7 @@ module Kudzu
         return unless txt
 
         txt.sets.each do |set|
-          return set if @user_agent =~ set.user_agent
+          return set if @config.user_agent =~ set.user_agent
         end
         return nil
       end
@@ -62,13 +62,15 @@ module Kudzu
         uri.fragment = uri.query = nil
 
         http = Net::HTTP.new(uri.host, uri.port || uri.default_port)
+        http.open_timeout = @config.open_timeout if @config.open_timeout
+        http.read_timeout = @config.read_timeout if @config.read_timeout
         if uri.scheme == 'https'
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         end
 
         begin
-          http.get(uri.to_s)
+          http.get(uri.request_uri)
         rescue => e
           Kudzu.log :error, "failed to fetch robots.txt: #{uri}", error: e
           nil
