@@ -24,7 +24,7 @@ module Kudzu
       private
 
       def sanitize(url)
-        url.gsub(/^( |　|%20)+/, '')
+        url.gsub(/^(\s|　|%20)+/, '')
       end
 
       def normalize(url, base_url)
