@@ -3,8 +3,7 @@ language: ruby
 rvm:
   - 2.3
   - 2.4
-before_install:
-  - gem install bundler -v 1.15.3
+  - 2.5
 before_script:
   - cd spec/dummy
   - bin/rails server -p 9292 -b localhost -d -e test
