@@ -93,9 +93,9 @@ module Kudzu
       def decode_body(body)
         if text?
           if find_encoding
-            body.force_encoding(charset).encode('utf-8', invalid: :replace, undef: :replace)
+            body.dup.force_encoding(charset).encode('utf-8', invalid: :replace, undef: :replace)
           else
-            body.encode('utf-8', invalid: :replace, undef: :replace)
+            body.dup.encode('utf-8', invalid: :replace, undef: :replace)
           end
         else
           body
