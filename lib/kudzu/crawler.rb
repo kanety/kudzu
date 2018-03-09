@@ -64,7 +64,7 @@ module Kudzu
     end
 
     def visit_link(link)
-      response = fetch(link, @config.default_request_header.to_h)
+      response = fetch(link, @config.default_request_header.to_h.dup)
       return unless response
 
       page = @repository.find_by_url(response.url)
