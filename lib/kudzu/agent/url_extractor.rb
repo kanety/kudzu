@@ -28,7 +28,9 @@ module Kudzu
       end
 
       def normalize(url, base_url)
-        uri = Addressable::URI.parse(base_url).join(url).normalize
+        uri = Addressable::URI.parse(base_url).join(url)
+        uri = Addressable::URI.parse(Addressable::URI.encode(Addressable::URI.unencode(uri)))
+        uri.host = uri.normalized_host
         uri.path = '/' unless uri.path
         uri.path = uri.path.gsub(%r|/{2,}|, '/')
         uri.fragment = nil
