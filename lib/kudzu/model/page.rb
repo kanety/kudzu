@@ -92,8 +92,8 @@ module Kudzu
 
       def decode_body(body)
         if text?
-          if find_encoding
-            body.dup.force_encoding(charset).encode('utf-8', invalid: :replace, undef: :replace)
+          if enc = find_encoding(body)
+            body.dup.force_encoding(enc).encode('utf-8', invalid: :replace, undef: :replace)
           else
             body.dup.encode('utf-8', invalid: :replace, undef: :replace)
           end
@@ -102,8 +102,10 @@ module Kudzu
         end
       end
 
-      def find_encoding
-        Encoding.find(charset)
+      def find_encoding(body)
+        require 'nkf'
+        enc = NKF.guess(body)
+        enc.name
       rescue
         nil
       end
