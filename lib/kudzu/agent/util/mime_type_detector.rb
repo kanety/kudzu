@@ -22,13 +22,13 @@ module Kudzu
           end
 
           def from_body(body)
-            mime = MIME.check_magics(StringIO.new(body))
+            mime = MimeMagic.by_magic(StringIO.new(body))
             mime.to_s if mime
           end
 
           def from_url(url)
             uri = Addressable::URI.parse(url)
-            mime = MIME.check_globs(uri.basename)
+            mime = MimeMagic.by_path(uri.basename)
             mime.to_s if mime
           end
         end
