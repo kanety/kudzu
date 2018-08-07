@@ -91,7 +91,7 @@ module Kudzu
       private
 
       def decode_body(body)
-        if text?
+        if body && text?
           if enc = find_encoding(body)
             body.dup.force_encoding(enc).encode('utf-8', invalid: :replace, undef: :replace)
           else
