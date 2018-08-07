@@ -103,11 +103,21 @@ module Kudzu
       end
 
       def find_encoding(body)
-        require 'nkf'
-        enc = NKF.guess(body)
-        enc.name
-      rescue
-        nil
+        begin
+          enc = Encoding.find(charset)
+        rescue ArgumentError
+          return nil
+        end
+
+        if enc == Encoding::Shift_JIS
+          Encoding::CP932
+        elsif enc == Encoding::EUC_JP
+          require 'nkf'
+          guessed = NKF.guess(body)
+          [Encoding::EUCJP_MS, Encoding::CP51932].include?(guessed) ? guessed : enc
+        else
+          enc
+        end
       end
     end
   end
