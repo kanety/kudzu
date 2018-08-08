@@ -17,6 +17,14 @@ class ApplicationController < ActionController::Base
     render plain: '', status: 500
   end
 
+  def image_file_jp
+    send_file Rails.root.join('public/test/files/jpeg1.jpg'), filename: 'テスト.jpg'
+  end
+
+  def image_file_en
+    send_file Rails.root.join('public/test/files/jpeg1.jpg'), filename: 'test.jpg'
+  end
+
   private
 
   def set_cookie
