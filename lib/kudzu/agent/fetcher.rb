@@ -80,18 +80,19 @@ module Kudzu
 
       def build_response(url, response, response_time, redirect_from)
         fetched = response.instance_variable_get("@read")
-        response_header = Hash[response.each.to_a]
-        if response_header.has_key?('content-disposition') &&
-           response_header['content-disposition']
-          response_header['content-disposition'].force_encoding('utf-8')
-        end
         Response.new(url: url,
                      status: response.code.to_i,
                      body: fetched ? response.body.to_s : nil,
-                     response_header: response_header,
+                     response_header: force_header_encoding(Hash[response.each.to_a]),
                      response_time: response_time,
                      redirect_from: redirect_from,
                      fetched: fetched)
+      end
+
+      def force_header_encoding(response_header)
+        response_header.each do |key, value|
+          response_header[key] = value.force_encoding('utf-8').encode('utf-8', invalid: :replace, undef: :replace)
+        end
       end
 
       def redirection?(code)
