@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.8
+
+* Decode response header with utf-8.
+
 ## 1.1.7
 
 * Decode shift_jis with cp932, guess euc-jp subspecific encoding with nkf.
