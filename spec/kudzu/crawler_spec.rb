@@ -1,5 +1,6 @@
 describe Kudzu::Crawler do
   let(:seed_url) { "http://localhost:9292/test/index.html" }
+  let(:seed_url_top) { "http://localhost:9292/index.html" }
   let(:config_file) { Rails.root.join('config/kudzu.rb') }
 
   before {
@@ -63,6 +64,12 @@ describe Kudzu::Crawler do
     it 'with configs' do
       crawler = Kudzu::Crawler.new(config_file: config_file)
       crawler.run(seed_url)
+      expect(crawler.repository.page.size > 0).to be_truthy
+    end
+
+    it 'crawl from a top page' do
+      crawler = Kudzu::Crawler.new(config_file: config_file)
+      crawler.run(seed_url_top)
       expect(crawler.repository.page.size > 0).to be_truthy
     end
   end
