@@ -15,7 +15,8 @@ module Kudzu
         if path.end_with?('/')
           path
         else
-          File.dirname(path) + '/'
+          dir = File.dirname(path)
+          dir.end_with?('/') ? dir : dir + '/'
         end
       end
     end
