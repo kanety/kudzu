@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.9
+
+* Fix directory separator for descendants filter.
+
 ## 1.1.8
 
 * Decode response header with utf-8.
