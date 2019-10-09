@@ -26,7 +26,7 @@ module Kudzu
 
     def initialize(config = {}, &block)
       self.filters = {}
-      DEFAULT_CONFIG.merge(config).each do |key, value|
+      DEFAULT_CONFIG.merge(config.select { |k, v| SIMPLE_CONFIGS.include?(k) }).each do |key, value|
         send("#{key}=", value)
       end
       if config_file || block

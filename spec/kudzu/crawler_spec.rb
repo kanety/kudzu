@@ -67,6 +67,12 @@ describe Kudzu::Crawler do
       expect(crawler.repository.page.size > 0).to be_truthy
     end
 
+    it 'with uuid' do
+      crawler = Kudzu::Crawler.new(uuid: SecureRandom.uuid)
+      crawler.run(seed_url)
+      expect(crawler.repository.page.size > 0).to be_truthy
+    end
+
     it 'crawl from a top page' do
       crawler = Kudzu::Crawler.new(config_file: config_file)
       crawler.run(seed_url_top)
