@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.10
+
+* Fix initialization with uuid option.
+
 ## 1.1.9
 
 * Fix directory separator for descendants filter.
