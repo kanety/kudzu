@@ -26,8 +26,8 @@ module Kudzu
 
     def initialize(config = {}, &block)
       self.filters = {}
-      DEFAULT_CONFIG.merge(config.select { |k, v| SIMPLE_CONFIGS.include?(k) }).each do |key, value|
-        send("#{key}=", value)
+      DEFAULT_CONFIG.merge(config).each do |key, value|
+        send("#{key}=", value) if respond_to?("#{key}=")
       end
       if config_file || block
         delegator = Delegator.new(self)
