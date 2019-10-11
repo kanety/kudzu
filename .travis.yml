@@ -4,6 +4,7 @@ rvm:
   - 2.3
   - 2.4
   - 2.5
+  - 2.6
 before_script:
   - cd spec/dummy
   - bin/rails server -p 9292 -b localhost -d -e test
