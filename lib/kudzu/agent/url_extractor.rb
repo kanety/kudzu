@@ -34,6 +34,7 @@ module Kudzu
         uri.path = '/' unless uri.path
         uri.path = uri.path.gsub(%r|/{2,}|, '/')
         uri.fragment = nil
+        Addressable::URI.parse(uri.to_s)
 
         if uri.scheme.in?(%w(http https))
           uri.to_s
