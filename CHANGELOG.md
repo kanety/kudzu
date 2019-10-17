@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.1.11
+
+* Skip errors on url normalization.
+
 ## 1.1.10
 
 * Fix initialization with uuid option.
