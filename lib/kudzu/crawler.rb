@@ -135,7 +135,7 @@ module Kudzu
 
       if @config.max_depth.nil? || link.depth < @config.max_depth.to_i
         refs = @agent.extract_refs(response)
-        enqueue_links(refs_to_links(refs, link.depth + 1)) unless refs.empty?
+        enqueue_links(refs_to_links(refs, link.depth + 1), response) unless refs.empty?
       end
 
       if @agent.filter_response?(response)
@@ -168,8 +168,8 @@ module Kudzu
       end
     end
 
-    def enqueue_links(links)
-      @callback.around(:enqueue, links) do
+    def enqueue_links(links, response = nil)
+      @callback.around(:enqueue, links, response) do
         @frontier.enqueue(links)
       end
     end
