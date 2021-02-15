@@ -107,13 +107,16 @@ module Kudzu
 
     def fetch(link, request_header)
       response = nil
-      @callback.around(:fetch, link, request_header, response) do
-        response = @agent.fetch(link.url, request_header)
-      end
-      if response.fetched?
-        Kudzu.log :info, "fetched page: #{response.status} #{response.url}"
-      else
-        Kudzu.log :info, "skipped page: #{response.status} #{response.url}"
+      (@config.max_retry.to_i + 1).times do
+        @callback.around(:fetch, link, request_header, response) do
+          response = @agent.fetch(link.url, request_header)
+        end
+        if response.fetched?
+          Kudzu.log :info, "fetched page: #{response.status} #{response.url}"
+        else
+          Kudzu.log :info, "skipped page: #{response.status} #{response.url}"
+        end
+        break if !response.fetched? || response.status_success? || response.status_redirection?
       end
       response
     rescue Exception => e

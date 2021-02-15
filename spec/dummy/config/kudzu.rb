@@ -1,4 +1,5 @@
 max_connection 0
+max_retry 3
 
 default_request_header key: 'value'
 
