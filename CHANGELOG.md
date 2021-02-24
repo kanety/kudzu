@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 1.2.0
+
+* Add `max_retry` option. (MasatoMiyoshi)
+* Add response to enqueue callback. (MasatoMiyoshi)
+
 ## 1.1.11
 
 * Skip errors on url normalization.
