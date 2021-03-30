@@ -1,0 +1,26 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-16.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: [2.3, 2.4, 2.5, 2.6, 2.7, 3.0]
+
+    name: ruby ${{ matrix.ruby }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - name: Run test
+      run: |
+        cd spec/dummy
+        bin/rails server -u webrick -p 9292 -b localhost -d -e test
+        cd ../..
+        bundle exec rspec
