@@ -22,13 +22,13 @@ module Kudzu
           end
 
           def from_body(body)
-            mime = MimeMagic.by_magic(StringIO.new(body))
+            mime = Marcel::Magic.by_magic(StringIO.new(body))
             mime.to_s if mime
           end
 
           def from_url(url)
             uri = Addressable::URI.parse(url)
-            mime = MimeMagic.by_path(uri.basename)
+            mime = Marcel::Magic.by_path(uri.basename)
             mime.to_s if mime
           end
         end
