@@ -1,5 +1,10 @@
 # CHANGELOG
 
+# 1.3.0
+
+* Use marcel instead of mimemagic.
+* Drop support for ruby 2.3 and 2.4.
+
 # 1.2.0
 
 * Add `max_retry` option. (MasatoMiyoshi)

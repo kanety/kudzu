@@ -12,7 +12,7 @@ A simple web crawler for ruby.
 
 ## Dependencies
 
-* ruby 2.3+
+* ruby 2.5+
 * libicu
 
 ## Installation
