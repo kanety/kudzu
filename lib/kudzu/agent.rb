@@ -30,13 +30,21 @@ module Kudzu
     end
 
     def extract_refs(response)
+      return [] unless redirect_url_allowed?(response)
       refs = @url_extractor.extract(response)
       @url_filterer.filter(refs, response.url)
     end
 
     def filter_response?(response)
-      return false if response.redirect_from && !@url_filterer.allowed?(response.url, response.redirect_from)
+      return true unless redirect_url_allowed?(response)
       !@page_filterer.allowed?(response)
+    end
+
+    private
+
+    def redirect_url_allowed?(response)
+      return true if response.redirect_from.nil? || response.redirect_from.empty?
+      @url_filterer.allowed?(response.url, response.redirect_from)
     end
   end
 end
