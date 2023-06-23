@@ -1,14 +1,18 @@
 # CHANGELOG
 
-# 1.3.0
+## 1.3.1
+
+* Fix response filter to check redirected host. (@MasatoMiyoshi)
+
+## 1.3.0
 
 * Use marcel instead of mimemagic.
 * Drop support for ruby 2.3 and 2.4.
 
-# 1.2.0
+## 1.2.0
 
-* Add `max_retry` option. (MasatoMiyoshi)
-* Add response to enqueue callback. (MasatoMiyoshi)
+* Add `max_retry` option. (@MasatoMiyoshi)
+* Add response to enqueue callback. (@MasatoMiyoshi)
 
 ## 1.1.11
 
