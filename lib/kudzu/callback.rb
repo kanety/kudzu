@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Kudzu
   class Callback
     CALLBACKS = [:on_success,      # 2xx

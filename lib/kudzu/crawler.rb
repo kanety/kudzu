@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'model/all'
 require_relative 'adapter/memory'
 require_relative 'agent'
