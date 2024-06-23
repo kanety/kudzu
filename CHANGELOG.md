@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.3.2
+
+* Add `frozen_string_literal: true`.
+
 ## 1.3.1
 
 * Fix response filter to check redirected host. (@MasatoMiyoshi)
