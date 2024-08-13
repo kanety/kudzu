@@ -18,6 +18,9 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
+    - name: Bundle list
+      run: |
+        bundle list
     - name: Run test
       run: |
         cd spec/dummy
