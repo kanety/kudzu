@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 1.4.0
+
+* Drop support for ruby <= 2.7.
+
 ## 1.3.3
 
 * Remove unnecessary requirement of `ostruct`.
